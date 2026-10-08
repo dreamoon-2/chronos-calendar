@@ -1,0 +1,8 @@
+# 统一换行符：仓库内统一 LF，Windows 检出按本机约定
+* text=auto
+
+# 批处理/脚本保持各自约定
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+*.sh text eol=lf

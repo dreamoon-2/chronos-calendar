@@ -1,0 +1,54 @@
+/* FullCalendar v7 定制：浅底、深字、左侧分类色条、今天高亮。 */
+
+.chronos-event-card {
+  height: 100%;
+  width: 100%;
+  border-left: 3px solid;
+  padding: 2px 6px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+}
+
+.chronos-event-title {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chronos-event-time {
+  font-size: 10px;
+  line-height: 1.1;
+  opacity: 0.75;
+}
+
+.chronos-event {
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.chronos-day-header {
+  font-weight: 600;
+}
+
+.chronos-today {
+  background-color: rgba(106, 82, 236, 0.08);
+}
+
+.dark .chronos-today {
+  background-color: rgba(139, 120, 255, 0.16);
+}
+
+.chronos-today-header {
+  color: #6a52ec;
+  font-weight: 700;
+}
+
+.dark .chronos-today-header {
+  color: #a89bfb;
+}
