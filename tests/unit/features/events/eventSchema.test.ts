@@ -5,8 +5,8 @@ import {
   formToEventInsert,
   validateEventForm,
   type EventFormValues,
-} from '../../src/features/events/eventSchema'
-import type { EventRow } from '../../src/types/database'
+} from '../../../../src/features/events/eventSchema'
+import type { EventRow } from '../../../../src/types/database'
 
 function timed(values: Partial<EventFormValues> = {}): EventFormValues {
   return {

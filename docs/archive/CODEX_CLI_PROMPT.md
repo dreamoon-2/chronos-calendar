@@ -6,6 +6,8 @@
 
 项目名 Chronos Calendar。使用 React + TypeScript + Vite + FullCalendar React v7 + Supabase（Auth / PostgreSQL / Realtime）+ PWA。产品参考 Android 日历的中文周视图：顶部年月与视图切换，周一到周日的日期列，独立全天栏，时间纵轴，彩色日程卡片，右下角“今天/新增”按钮。手机和电脑使用同一套代码，通过同一账号同步日程。
 
+> 历史归档：本文是初次开发时的任务提示，原始目录要求不代表当前代码布局。现有项目维护请先阅读 [项目结构说明](../PROJECT_STRUCTURE.md)。
+
 **首先完整阅读 `docs/PROJECT_SPEC.md` 和 `supabase/migrations/202610080001_initial_schema.sql`，以设计文档中的 MVP 范围、数据库结构、验收标准为事实源。** 若仓库尚不存在这些文件，请提示我将随任务一起交付的文件复制进去；不要自行编造“已连接数据库”等状态。
 
 ## 工作原则

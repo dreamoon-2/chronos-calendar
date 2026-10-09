@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { supabase } from '../../lib/supabase'
-import { debounce } from '../../lib/network'
+import { supabase } from '../../services/supabaseClient'
+import { debounce } from '../../utils/debounce'
 import { useAuth } from '../auth/AuthProvider'
 
 /**

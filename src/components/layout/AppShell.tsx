@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { useOnlineStatus } from '../../lib/network'
+import { useOnlineStatus } from '../../hooks/useOnlineStatus'
 import { CalendarToolbar } from '../../features/calendar/CalendarToolbar'
 import { Header } from './Header'
 
@@ -7,6 +7,8 @@ interface AppShellProps {
   isDemo: boolean
   title: string
   viewType: string
+  zoom: number
+  onChangeZoom: (zoom: number) => void
   onPrev: () => void
   onNext: () => void
   onToday: () => void
@@ -24,6 +26,8 @@ export function AppShell({
   isDemo,
   title,
   viewType,
+  zoom,
+  onChangeZoom,
   onPrev,
   onNext,
   onToday,
@@ -38,7 +42,7 @@ export function AppShell({
   const online = useOnlineStatus()
 
   return (
-    <div className="safe-area-top flex h-screen flex-col bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+    <div className="safe-area-top flex h-[100dvh] flex-col bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
       <Header isDemo={isDemo} onOpenSettings={onOpenSettings} />
 
       {isDemo && (
@@ -55,6 +59,8 @@ export function AppShell({
       <CalendarToolbar
         title={title}
         viewType={viewType}
+        zoom={zoom}
+        onChangeZoom={onChangeZoom}
         onPrev={onPrev}
         onNext={onNext}
         onToday={onToday}
@@ -71,7 +77,7 @@ export function AppShell({
           </aside>
         )}
 
-        <main className="relative flex-1 overflow-hidden">
+        <main className="relative min-w-0 flex-1 overflow-hidden">
           {children}
 
           <div className="absolute right-4 bottom-[calc(1.25rem+env(safe-area-inset-bottom))] z-30 flex flex-col items-end gap-3 sm:hidden">
@@ -86,7 +92,7 @@ export function AppShell({
               type="button"
               onClick={onCreate}
               aria-label="新建日程"
-              className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-600 text-3xl font-light text-white shadow-xl transition hover:bg-brand-700"
+              className="flex h-14 w-14 items-center justify-center rounded-full border border-slate-100 bg-white text-3xl font-light text-slate-900 shadow-xl transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
             >
               ＋
             </button>

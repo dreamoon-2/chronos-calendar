@@ -36,3 +36,7 @@ blob-report
 
 # tauri build log
 tauri-build.log
+
+# updater signing keys and prepared release assets
+*.key
+/release/

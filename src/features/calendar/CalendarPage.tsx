@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   type CalendarRef,
   type DateClickInfo,
@@ -11,9 +11,9 @@ import { addDays, addHours, format } from 'date-fns'
 import type { EventRow, EventUpdate } from '../../types/database'
 import { AppShell } from '../../components/layout/AppShell'
 import { useToast } from '../../components/ui/Toast'
-import { useBackButton } from '../../lib/backButton'
-import { ConflictError, toErrorMessage } from '../../lib/errors'
-import { toDateOnly, toInclusiveEndDate } from '../../lib/dates'
+import { useBackButton } from '../../hooks/useBackButton'
+import { ConflictError, toErrorMessage } from '../../utils/errors'
+import { toDateOnly, toInclusiveEndDate } from '../../utils/dates'
 import { useAuth } from '../auth/AuthProvider'
 import { useCategories } from '../categories/categoryQueries'
 import { EventDetails } from '../events/EventDetails'
@@ -34,12 +34,16 @@ import { SettingsPage } from '../settings/SettingsPage'
 import { CalendarGrid } from './CalendarGrid'
 import { Sidebar } from './Sidebar'
 import { useCalendarRange } from './useCalendarRange'
+import { useCalendarZoom } from './useCalendarZoom'
+import { useEventUndo } from '../events/useEventUndo'
+import { useDesktopReminders } from '../desktop/useDesktopReminders'
 
 interface EditorState {
   mode: 'create' | 'edit'
   initial: EventFormValues
   eventId?: string
   version?: number
+  original?: EventRow
 }
 
 function selectToForm(info: DateSelectInfo): EventFormValues {
@@ -105,6 +109,9 @@ export function CalendarPage() {
   const { user, isDemo } = useAuth()
   const toast = useToast()
   const calendarRef = useRef<CalendarRef>(null)
+  const { zoom, changeZoom } = useCalendarZoom()
+  const { latest: undoEntry, busy: undoBusy, remember, undo } = useEventUndo()
+  useDesktopReminders()
 
   const { range, viewType, currentDate, title, handleDatesSet } =
     useCalendarRange()
@@ -121,6 +128,20 @@ export function CalendarPage() {
     () => new Set(),
   )
   const [sidebarOpen, setSidebarOpen] = useState(true)
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      const element = event.target as HTMLElement | null
+      if (editor || settingsOpen || !undoEntry || element?.closest('input, textarea, select, [contenteditable="true"]')) return
+      if ((event.ctrlKey || event.metaKey) && !event.shiftKey && event.key.toLowerCase() === 'z') {
+        event.preventDefault()
+        setDetails(null)
+        void undo()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [editor, settingsOpen, undoEntry, undo])
 
   // Android 返回键：优先关闭弹层，否则退出应用
   useBackButton(
@@ -200,6 +221,7 @@ export function CalendarPage() {
       initial: eventToForm(event.extendedProps.raw),
       eventId: event.id,
       version: event.extendedProps.version,
+      original: event.extendedProps.raw,
     })
   }, [])
 
@@ -227,7 +249,7 @@ export function CalendarPage() {
   const onEventDrop = useCallback(
     async (info: EventDropInfo) => {
       const version = info.event.extendedProps.version as number | undefined
-      if (version == null || !user) {
+      if (version == null || !user || undoBusy) {
         info.revert()
         return
       }
@@ -240,7 +262,9 @@ export function CalendarPage() {
         return
       }
       try {
-        await updateEventApi(user.id, info.event.id, version, patch)
+        const before = info.oldEvent.extendedProps.raw as EventRow
+        const after = await updateEventApi(user.id, info.event.id, version, patch)
+        remember(before, after, '移动')
         toast.success('已移动日程')
       } catch (err) {
         info.revert()
@@ -253,13 +277,13 @@ export function CalendarPage() {
         invalidateAll()
       }
     },
-    [user, toast, invalidateAll],
+    [user, toast, invalidateAll, undoBusy, remember],
   )
 
   const onEventResize = useCallback(
     async (info: EventResizeDoneInfo) => {
       const version = info.event.extendedProps.version as number | undefined
-      if (version == null || !user) {
+      if (version == null || !user || undoBusy) {
         info.revert()
         return
       }
@@ -272,7 +296,9 @@ export function CalendarPage() {
         return
       }
       try {
-        await updateEventApi(user.id, info.event.id, version, patch)
+        const before = info.oldEvent.extendedProps.raw as EventRow
+        const after = await updateEventApi(user.id, info.event.id, version, patch)
+        remember(before, after, '调整时长')
         toast.success('已调整时长')
       } catch (err) {
         info.revert()
@@ -285,7 +311,7 @@ export function CalendarPage() {
         invalidateAll()
       }
     },
-    [user, toast, invalidateAll],
+    [user, toast, invalidateAll, undoBusy, remember],
   )
 
   return (
@@ -294,6 +320,8 @@ export function CalendarPage() {
         isDemo={isDemo}
         title={title}
         viewType={viewType}
+        zoom={zoom}
+        onChangeZoom={changeZoom}
         onPrev={() => api()?.prev()}
         onNext={() => api()?.next()}
         onToday={() => api()?.today()}
@@ -318,6 +346,8 @@ export function CalendarPage() {
             <CalendarGrid
               calendarRef={calendarRef}
               events={visibleEvents}
+              zoom={zoom}
+              onChangeZoom={changeZoom}
               onDatesSet={handleDatesSet}
               onSelect={onSelect}
               onDateClick={onDateClick}
@@ -326,6 +356,14 @@ export function CalendarPage() {
               onEventResize={onEventResize}
             />
           </div>
+          {undoEntry && (
+            <div className="chronos-undo-bar" role="status">
+              <span className="truncate">已{undoEntry.label}「{undoEntry.before.title}」</span>
+              <button type="button" onClick={() => { setDetails(null); void undo() }} disabled={undoBusy} aria-label="撤销上一步" className="shrink-0 font-semibold text-sky-600 dark:text-sky-300">
+                {undoBusy ? '撤销中…' : '撤销'}<span className="ml-1 hidden text-xs sm:inline">Ctrl+Z</span>
+              </button>
+            </div>
+          )}
         </div>
       </AppShell>
 
@@ -336,6 +374,9 @@ export function CalendarPage() {
           eventId={editor.eventId}
           version={editor.version}
           categories={categoriesQ.data ?? []}
+          categoriesReady={categoriesQ.isSuccess}
+          original={editor.original}
+          onChanged={remember}
           onClose={() => setEditor(null)}
         />
       )}

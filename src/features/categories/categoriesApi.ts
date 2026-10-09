@@ -1,5 +1,5 @@
-import { supabase } from '../../lib/supabase'
-import { demoBackend } from '../../lib/demoBackend'
+import { supabase } from '../../services/supabaseClient'
+import { demoBackend } from '../../services/demoBackend'
 import type { CategoryInsert, CategoryRow } from '../../types/database'
 
 export async function listCategories(userId: string): Promise<CategoryRow[]> {

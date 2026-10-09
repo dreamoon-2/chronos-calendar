@@ -3,6 +3,8 @@ use tauri::{
     tray::{TrayIconBuilder, TrayIconEvent, MouseButton, MouseButtonState},
     AppHandle, Manager,
 };
+mod reminders;
+mod updates;
 
 /// 唤起主窗口（显示、还原、聚焦）。
 fn show_main_window(app: &AppHandle) {
@@ -16,6 +18,12 @@ fn show_main_window(app: &AppHandle) {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, Some(vec!["--autostart"])))
+        .manage(reminders::ReminderService::default())
+        .invoke_handler(tauri::generate_handler![reminders::set_reminders, reminders::test_notification, updates::github_release_status])
         // 单实例：第二个实例启动时唤起已有窗口，避免重复运行。
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             show_main_window(app);
@@ -53,6 +61,11 @@ pub fn run() {
                     }
                 })
                 .build(app)?;
+
+            reminders::start(app.handle());
+            if std::env::args().any(|argument| argument == "--autostart") {
+                if let Some(window) = app.get_webview_window("main") { let _ = window.hide(); }
+            }
 
             Ok(())
         })

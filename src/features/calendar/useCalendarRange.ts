@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import type { DatesSetInfo } from '@fullcalendar/react'
 import type { CalendarRange } from '../../types/database'
+import { format } from 'date-fns'
 
 /** 维护日历当前可视区间、视图类型、定位日期与标题。 */
 export function useCalendarRange() {
@@ -13,7 +14,7 @@ export function useCalendarRange() {
     setRange({ start: info.start, end: info.end })
     setViewType(info.view.type)
     setCurrentDate(info.view.currentStart)
-    setTitle(info.view.title)
+    setTitle(format(info.view.currentStart, 'yyyy/MM'))
   }, [])
 
   return { range, viewType, currentDate, title, handleDatesSet }

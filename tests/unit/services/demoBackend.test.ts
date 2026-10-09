@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { demoBackend } from '../../src/lib/demoBackend'
-import { ConflictError } from '../../src/lib/errors'
-import type { EventInsert } from '../../src/types/database'
+import { demoBackend } from '../../../src/services/demoBackend'
+import { ConflictError } from '../../../src/utils/errors'
+import type { EventInsert } from '../../../src/types/database'
 
 function timedInsert(title = '测试事件'): EventInsert {
   return {

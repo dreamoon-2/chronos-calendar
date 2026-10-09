@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { toCalendarEvent } from '../../src/features/events/eventMappers'
-import { eventPalette } from '../../src/lib/categories'
-import type { CategoryRow, EventRow } from '../../src/types/database'
+import { toCalendarEvent } from '../../../../src/features/events/eventMappers'
+import { eventPalette } from '../../../../src/utils/colors'
+import type { CategoryRow, EventRow } from '../../../../src/types/database'
 
 const category: CategoryRow = {
   id: 'cat-1',

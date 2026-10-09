@@ -10,9 +10,9 @@ import type {
   EventRow,
   EventUpdate,
 } from '../types/database'
-import { DEFAULT_CATEGORIES } from './categories'
-import { ConflictError } from './errors'
-import { eventOverlapsRange, toDateOnly } from './dates'
+import { DEFAULT_CATEGORIES } from '../features/categories/categoryPresets'
+import { ConflictError } from '../utils/errors'
+import { eventOverlapsRange, toDateOnly } from '../utils/dates'
 
 export const DEMO_USER_ID = 'demo-user'
 const STORAGE_KEY = 'chronos.demo.v1'
@@ -215,7 +215,7 @@ export const demoBackend = {
     return row
   },
 
-  updateEvent(id: string, version: number, patch: EventUpdate): EventRow {
+  updateEvent(id: string, version: number, patch: EventUpdate & { deleted_at?: string | null }): EventRow {
     const state = load()
     const idx = state.events.findIndex((e) => e.id === id)
     if (idx < 0) throw new ConflictError('该日程已被删除，请刷新')
@@ -232,13 +232,15 @@ export const demoBackend = {
     return row
   },
 
-  softDeleteEvent(id: string, version: number): void {
+  softDeleteEvent(id: string, version: number): EventRow {
     const state = load()
     const idx = state.events.findIndex((e) => e.id === id)
-    if (idx < 0) return
+    if (idx < 0) throw new ConflictError('该日程已被删除，请刷新')
     const current = state.events[idx]
     if (current.version !== version) throw new ConflictError()
-    state.events[idx] = { ...current, deleted_at: new Date().toISOString(), version: current.version + 1 }
+    const row = { ...current, deleted_at: new Date().toISOString(), version: current.version + 1, updated_at: new Date().toISOString() }
+    state.events[idx] = row
     save(state)
+    return row
   },
 }

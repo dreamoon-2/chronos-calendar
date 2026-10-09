@@ -2,13 +2,18 @@
 
 跨端同步日程表（个人日历 MVP）。React + TypeScript + Vite + FullCalendar v7 + Supabase（Auth / PostgreSQL / Realtime）+ PWA。手机与电脑使用同一套代码，通过同一账号同步日程，账户间严格隔离。
 
-> 设计文档见 [`docs/PROJECT_SPEC.md`](docs/PROJECT_SPEC.md)，开发任务说明见 [`docs/CODEX_CLI_PROMPT.md`](docs/CODEX_CLI_PROMPT.md)，数据库结构见 [`supabase/migrations/202610080001_initial_schema.sql`](supabase/migrations/202610080001_initial_schema.sql)。
+> **项目结构与功能说明**：[`docs/PROJECT_STRUCTURE.md`](docs/PROJECT_STRUCTURE.md)。其他文档见 [`docs/README.md`](docs/README.md)；初始设计见 [`docs/PROJECT_SPEC.md`](docs/PROJECT_SPEC.md)，原始开发提示已归档到 [`docs/archive/CODEX_CLI_PROMPT.md`](docs/archive/CODEX_CLI_PROMPT.md)。
 
 ## 功能
 
 - 邮箱魔法链接（Magic Link）与邮箱 + 密码两种登录、注册、会话保持、退出、设置密码。
 - 中文周（默认）/ 月 / 日视图，移动端额外提供“三日”紧凑视图；周一为一周开始；今天高亮、当前时间红线、上/下一段导航、跳转今天。
 - 日程新增、编辑、软删除；全天事件、跨天/跨午夜事件；分类配色（浅底 + 深字 + 左侧色条）；备注；时间重叠分栏显示。
+- 周 / 日 / 三日时间表支持 50%–200% 缩放：按钮、滑块、Ctrl+滚轮、触屏双指缩放；保持正在查看的时间位置并记住比例。月视图保留控件并调整月历行高。拖拽与选择按 15 分钟对齐。
+- 保存失败保留表单，点击编辑器外不关闭；修改自动保存为本机草稿，重新打开可恢复。创建表单优先展示标题、时间、类型，跨天与备注按需展开；Ctrl+Enter 保存。
+- 删除、移动、调整时长与编辑后可撤销，支持 Ctrl+Z，保留本次页面会话最近 20 步；遇到其他设备更新时提示冲突。
+- 细网格、蓝色日期强调与浅色日程块；周／日显示具体日期，标题最多两行，短日程优先显示标题，悬停查看完整时间、备注和类型。
+- 基础任务类型：课程、科研、会议、生活、任务、工作、运动、休息。新建日程可快捷选择，缺少的类型自动创建；设置中也可逐个添加。自定义类型及已有类型均可选 10 种主题色或自由取色，并预览配色；修改类型颜色会更新该类型的所有日程。
 - **桌面端**：可收起的左侧栏，含迷你月历导航与分类筛选；拖拽移动与拉伸时长（失败自动 `revert()` 回滚）。
 - **移动端**：以截图为准的紧凑布局 + 右下角悬浮「今天 / ＋」按钮；PWA 可安装为独立 App，含 iOS 安全区适配与桌面图标。
 - 基于可视区间查询（区间重叠，不漏跨界事件），不加载全量历史。
@@ -62,7 +67,7 @@ VITE_DEMO_SEED=true            # 可选：演示模式是否预置示例数据
    `supabase/migrations/202610080001_initial_schema.sql`
    （或使用 CLI：`supabase db push`）。它会创建 `categories`、`events` 表、索引、触发器（自动维护 `version`/`updated_at`）、RLS 策略，并把两张表加入 `supabase_realtime` publication。
 3. 复制 Project Settings → API 里的 **Project URL** 与 **anon publishable key** 到 `.env.local`。
-4. 配置认证邮箱：Authentication → Providers → Email 启用。并在 Authentication → URL Configuration → Redirect URLs 加入本地地址（如 `http://localhost:5173`）与正式域名。
+4. 配置认证邮箱：Authentication → Providers → Email 启用。并在 Authentication → URL Configuration → Redirect URLs 加入本地地址（默认 `http://localhost:1420`）与正式域名。
 5. 重启 `npm run dev`，使用邮箱 + 密码或邮箱链接登录，进入真实同步模式。
 
 > 首次执行迁移前建议先在开发项目验证结构。迁移工具应管理执行版本，不要在远端反复手工执行同一迁移。
@@ -127,13 +132,20 @@ npm run desktop:build    # 生成安装包
 ```
 
 产物：`src-tauri/target/release/chronos-calendar.exe`（独立可运行）与
-`src-tauri/target/release/bundle/nsis/Chronos Calendar_0.1.0_x64-setup.exe`（安装包）。
+`src-tauri/target/release/bundle/nsis/Chronos Calendar_0.3.0_x64-setup.exe`（安装包）。
+
+桌面程序内嵌构建时的网页资源。修改源码或执行 `npm run build` 后，已经运行的 exe 不会自动更新；需要退出托盘中的旧程序，重新执行 `npm run desktop:build`，再启动新版 exe 或安装包。开发期间可用 `npm run desktop:dev` 查看实时更新。界面顶部显示版本号，便于核对当前程序。
 
 桌面增强（已实现）：
 
 - **系统托盘**：托盘图标（左键唤起窗口，菜单含「显示主窗口 / 退出」）。
 - **关闭到托盘**：点击窗口 X 隐藏到托盘（后台继续同步），退出走托盘菜单「退出」。
 - **单实例**：重复启动时唤起已有窗口，避免多开。
+- **自动更新（0.3.0 起）**：启动时检查本仓库的正式 GitHub Release；显示版本说明和下载进度，验证签名后安装并重启；支持手动检查、关闭启动检查和失败重试。首个正式 Release 与 Actions Secrets 配置见 [自动更新与发布说明](docs/AUTO_UPDATE.md)，推送源码不会直接更新已安装的软件。
+- **开机启动**：设置中开启，登录 Windows 后自动启动到托盘；默认关闭。
+- **日程提醒**：设置中开启，支持开始时或提前 5／10／15／30 分钟的系统通知，全天日程以 09:00 为基准；窗口隐藏后由原生线程继续检查提醒，发送成功后在本机去重。需要登录并联网加载近期计划；退出程序或关机后不再提醒。使用安装版验证 Windows 系统通知。
+
+新版功能的操作与验收步骤见 [功能体验与测试指南](docs/FEATURE_TESTING.md)。
 
 > ⚠️ **国内网络注意**：Tauri 打包时会从 GitHub 下载 NSIS/WiX 工具链，直连容易超时。设置镜像后重试即可：
 >

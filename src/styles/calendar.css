@@ -1,54 +1,62 @@
-/* FullCalendar v7 定制：浅底、深字、左侧分类色条、今天高亮。 */
-
+/* 留白、细网格、蓝色日期强调与浅色日程块。 */
+.chronos-calendar-surface {
+  --fc-classic-border: #edf0f4;
+  --fc-classic-today: #f0f8ff;
+  --fc-classic-primary: #0284c7;
+  --fc-classic-foreground: #475569;
+  --fc-classic-now: #f43f5e;
+  touch-action: pan-x pan-y;
+}
+.dark .chronos-calendar-surface {
+  --fc-classic-border: #263344;
+  --fc-classic-today: #122539;
+  --fc-classic-background: #0f172a;
+  --fc-classic-foreground: #cbd5e1;
+}
 .chronos-event-card {
-  height: 100%;
-  width: 100%;
-  border-left: 3px solid;
-  padding: 2px 6px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 1px;
+  height: 100%; width: 100%; min-height: 22px;
+  border-left: 2px solid; border-radius: 4px;
+  padding: 3px 6px; overflow: hidden;
+  display: flex; flex-direction: column; justify-content: flex-start; gap: 3px;
+  color: var(--event-text); background: var(--event-background);
 }
-
+.chronos-event-card[data-timed="true"] { container-type: size; min-height: 0; }
 .chronos-event-title {
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1.25;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 12px; font-weight: 500; line-height: 1.4; overflow: hidden;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow-wrap: anywhere;
 }
-
-.chronos-event-time {
-  font-size: 10px;
-  line-height: 1.1;
-  opacity: 0.75;
+.chronos-event-time { font-size: 10px; line-height: 1.25; opacity: 0.7; }
+@container (max-height: 46px) {
+  .chronos-event-time { display: none; }
+  .chronos-event-title { -webkit-line-clamp: 1; line-height: 1.3; }
 }
-
-.chronos-event {
-  border-radius: 6px;
-  cursor: pointer;
+.dark .chronos-event-card { color: #e2e8f0; }
+.chronos-event { border-radius: 5px; cursor: pointer; background: transparent !important; }
+.chronos-event:hover { filter: brightness(0.97); box-shadow: 0 2px 8px #0f172a12; }
+.chronos-date-heading { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 9px 0 12px; }
+.chronos-weekday { font-size: 12px; font-weight: 500; color: #64748b; }
+.chronos-date-number { font-size: 20px; font-weight: 600; color: #475569; letter-spacing: -0.7px; }
+.chronos-today-header .chronos-date-number, .chronos-today-header .chronos-weekday { color: #0284c7; }
+.chronos-today-header .chronos-date-number::after { content: ''; display: block; height: 3px; width: 24px; border-radius: 2px; background: #0284c7; margin: 5px auto -8px; }
+.chronos-today { background-color: #f0f8ff; }
+.dark .chronos-today { background-color: #122539; }
+.dark .chronos-date-number, .dark .chronos-weekday { color: #cbd5e1; }
+.dark .chronos-today-header .chronos-date-number { color: #38bdf8; }
+.chronos-calendar-surface .chronos-month-row { min-height: calc(92px * var(--calendar-zoom, 1)) !important; }
+.chronos-month-cell .chronos-event-title { font-size: calc(12px * clamp(0.8, var(--calendar-zoom, 1), 1.3)); }
+.chronos-undo-bar {
+  position: fixed; left: 50%; bottom: max(24px, env(safe-area-inset-bottom));
+  transform: translateX(-50%); z-index: 35;
+  display: flex; align-items: center; gap: 18px;
+  max-width: min(560px, calc(100vw - 150px));
+  border: 1px solid #e2e8f0; background: #fff; border-radius: 14px;
+  padding: 12px 18px; box-shadow: 0 6px 30px #0f172a15; font-size: 13px;
 }
-
-.chronos-day-header {
-  font-weight: 600;
-}
-
-.chronos-today {
-  background-color: rgba(106, 82, 236, 0.08);
-}
-
-.dark .chronos-today {
-  background-color: rgba(139, 120, 255, 0.16);
-}
-
-.chronos-today-header {
-  color: #6a52ec;
-  font-weight: 700;
-}
-
-.dark .chronos-today-header {
-  color: #a89bfb;
+.dark .chronos-undo-bar { background: #1e293b; border-color: #334155; }
+@media (max-width: 639px) {
+  .chronos-date-number { font-size: 16px; }
+  .chronos-date-heading { gap: 5px; padding: 8px 0 10px; }
+  .chronos-event-card { padding: 3px 4px; }
+  .chronos-undo-bar { left: 12px; transform: none; padding: 10px 12px; gap: 10px; }
 }

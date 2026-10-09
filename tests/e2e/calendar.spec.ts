@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
 
 // E2E 需要先启动开发服务器：npm run dev
+// 默认地址 http://localhost:1420；其他端口可设置 E2E_BASE_URL。
 //
 // 两种运行环境：
 // - 未配置 Supabase 凭证 → 演示模式，跑「演示模式」用例组；

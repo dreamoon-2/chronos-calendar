@@ -1,7 +1,7 @@
-import { supabase } from '../../lib/supabase'
-import { demoBackend } from '../../lib/demoBackend'
-import { ConflictError } from '../../lib/errors'
-import { toDateOnly } from '../../lib/dates'
+import { supabase } from '../../services/supabaseClient'
+import { demoBackend } from '../../services/demoBackend'
+import { ConflictError } from '../../utils/errors'
+import { toDateOnly } from '../../utils/dates'
 import type {
   CalendarRange,
   EventInsert,
@@ -96,7 +96,7 @@ export async function softDeleteEvent(
   userId: string,
   id: string,
   version: number,
-): Promise<void> {
+): Promise<EventRow> {
   if (!supabase) return demoBackend.softDeleteEvent(id, version)
   const { data, error } = await supabase
     .from('events')
@@ -104,8 +104,24 @@ export async function softDeleteEvent(
     .eq('id', id)
     .eq('user_id', userId)
     .eq('version', version)
-    .select('id')
+    .select('*')
     .maybeSingle()
   if (error) throw error
   if (!data) throw new ConflictError()
+  return data as EventRow
+}
+
+/** 撤销仍检查成功写入后的版本，避免覆盖另一设备的新修改。 */
+export async function restoreEvent(userId: string, before: EventRow, expectedVersion: number): Promise<EventRow> {
+  const patch = {
+    title: before.title, description: before.description, category_id: before.category_id,
+    all_day: before.all_day, start_at: before.start_at, end_at: before.end_at,
+    start_date: before.start_date, end_date: before.end_date, deleted_at: before.deleted_at,
+  }
+  if (!supabase) return demoBackend.updateEvent(before.id, expectedVersion, patch)
+  const { data, error } = await supabase.from('events').update(patch)
+    .eq('id', before.id).eq('user_id', userId).eq('version', expectedVersion).select('*').maybeSingle()
+  if (error) throw error
+  if (!data) throw new ConflictError()
+  return data as EventRow
 }

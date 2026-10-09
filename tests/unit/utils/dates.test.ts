@@ -7,7 +7,7 @@ import {
   toDateOnly,
   toExclusiveEndDate,
   toInclusiveEndDate,
-} from '../../src/lib/dates'
+} from '../../../src/utils/dates'
 
 describe('toDateOnly / all-day exclusive end', () => {
   it('formats local date without timezone drift', () => {

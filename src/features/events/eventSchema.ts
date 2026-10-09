@@ -5,7 +5,7 @@ import {
   toExclusiveEndDate,
   toInclusiveEndDate,
   splitDateTime,
-} from '../../lib/dates'
+} from '../../utils/dates'
 
 export interface EventFormValues {
   title: string

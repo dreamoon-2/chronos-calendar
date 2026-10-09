@@ -2,14 +2,14 @@ import { parse } from 'date-fns'
 import type { CalendarEvent } from './eventMappers'
 import { Button } from '../../components/ui/Button'
 import { Modal } from '../../components/ui/Modal'
-import { eventPalette } from '../../lib/categories'
+import { eventPalette } from '../../utils/colors'
 import {
   formatFullDate,
   formatShortDate,
   formatTimeOf,
   isSameLocalDay,
   toInclusiveEndDate,
-} from '../../lib/dates'
+} from '../../utils/dates'
 
 interface EventDetailsProps {
   event: CalendarEvent | null

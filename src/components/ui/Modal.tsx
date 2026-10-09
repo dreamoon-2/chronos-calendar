@@ -8,9 +8,10 @@ interface ModalProps {
   children: ReactNode
   /** 窄屏使用底部抽屉样式。 */
   wide?: boolean
+  closeOnBackdrop?: boolean
 }
 
-export function Modal({ open, onClose, title, children, wide }: ModalProps) {
+export function Modal({ open, onClose, title, children, wide, closeOnBackdrop = true }: ModalProps) {
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => {
@@ -26,7 +27,7 @@ export function Modal({ open, onClose, title, children, wide }: ModalProps) {
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center sm:p-4"
       onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose()
+        if (closeOnBackdrop && e.target === e.currentTarget) onClose()
       }}
     >
       <div
@@ -36,6 +37,7 @@ export function Modal({ open, onClose, title, children, wide }: ModalProps) {
         )}
         role="dialog"
         aria-modal="true"
+        aria-label={title}
       >
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3 dark:border-slate-700">
           <h2 className="text-base font-semibold text-slate-900 dark:text-white">

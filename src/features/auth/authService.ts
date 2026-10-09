@@ -1,4 +1,4 @@
-import { supabase } from '../../lib/supabase'
+import { supabase } from '../../services/supabaseClient'
 
 const RATE_LIMIT_MSG =
   '邮件发送已达上限：Supabase 内置邮件服务每小时仅允许 2 封。请改用「邮箱 + 密码」登录，或等待约 1 小时后重试，或在 Supabase 配置自定义 SMTP。'

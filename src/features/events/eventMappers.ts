@@ -1,6 +1,6 @@
 import type { EventInput } from '@fullcalendar/react'
 import type { CategoryRow, EventRow } from '../../types/database'
-import { eventPalette, FALLBACK_COLOR } from '../../lib/categories'
+import { eventPalette, FALLBACK_COLOR } from '../../utils/colors'
 
 /** 传给 FullCalendar 的事件对象，携带服务端字段用于编辑/冲突检测。 */
 export interface CalendarEvent extends EventInput {

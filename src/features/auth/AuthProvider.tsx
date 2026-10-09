@@ -7,8 +7,8 @@ import {
   type ReactNode,
 } from 'react'
 import type { User } from '@supabase/supabase-js'
-import { supabase } from '../../lib/supabase'
-import { DEMO_USER_ID } from '../../lib/demoBackend'
+import { supabase } from '../../services/supabaseClient'
+import { DEMO_USER_ID } from '../../services/demoBackend'
 
 export interface AuthUser {
   id: string

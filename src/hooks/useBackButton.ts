@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { App } from '@capacitor/app'
-import { platform } from './platform'
+import { platform } from '../platform/detectPlatform'
 
 /**
  * 处理 Android 硬件返回键。

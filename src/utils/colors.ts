@@ -1,33 +1,22 @@
-/** 分类默认值与颜色工具。颜色采用“浅底 + 深字 + 左侧色条”。 */
-
-export interface CategoryPreset {
-  name: string
-  color: string
-}
-
-export const DEFAULT_CATEGORIES: CategoryPreset[] = [
-  { name: '课程', color: '#d97706' }, // 琥珀
-  { name: '科研', color: '#7c3aed' }, // 紫
-  { name: '会议', color: '#2563eb' }, // 蓝
-  { name: '生活', color: '#0d9488' }, // 青
-  { name: '任务', color: '#16a34a' }, // 绿
-]
+/** 通用主题色与配色工具。颜色采用“浅底 + 深字 + 左侧色条”。 */
 
 export const FALLBACK_COLOR = '#6a52ec'
 
-const COLOR_PALETTE = [
-  '#d97706',
-  '#7c3aed',
-  '#2563eb',
-  '#0d9488',
-  '#16a34a',
-  '#db2777',
-  '#dc2626',
-  '#4f46e5',
+export const THEME_COLORS = [
+  { name: '琥珀', color: '#d97706' },
+  { name: '紫罗兰', color: '#7c3aed' },
+  { name: '天空蓝', color: '#2563eb' },
+  { name: '青绿', color: '#0d9488' },
+  { name: '草绿', color: '#16a34a' },
+  { name: '玫瑰', color: '#db2777' },
+  { name: '珊瑚红', color: '#dc2626' },
+  { name: '靛蓝', color: '#4f46e5' },
+  { name: '石板灰', color: '#64748b' },
+  { name: '天青', color: '#0891b2' },
 ]
 
 export function colorPalette(): string[] {
-  return COLOR_PALETTE
+  return THEME_COLORS.map((theme) => theme.color)
 }
 
 function hexToRgb(hex: string): { r: number; g: number; b: number } | null {

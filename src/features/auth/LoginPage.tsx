@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import clsx from 'clsx'
-import { platform } from '../../lib/platform'
+import { platform } from '../../platform/detectPlatform'
 import {
   mapAuthError,
   sendMagicLink,
