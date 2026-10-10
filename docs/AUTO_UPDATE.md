@@ -1,4 +1,4 @@
-# Windows 自动更新与 GitHub 发布
+# Windows 自动更新与 Windows／Android 发布
 
 更新日期：2026-10-09。自动更新从 **0.3.0 Windows 桌面版** 开始提供。
 
@@ -38,7 +38,7 @@ https://github.com/dreamoon-2/chronos-calendar/releases/latest/download/latest.j
 
 ## 让 GitHub 自动发布
 
-仓库当前还没有正式 Release。项目已提供 `.github/workflows/desktop-release.yml`，需要把本轮审核后的代码、配置、公钥及工作流推送到该仓库，并完成一次 Secrets 配置。
+仓库已发布 `v0.3.0` Windows Release。本轮把 `.github/workflows/desktop-release.yml` 扩展为 Windows／Android 同步发布；提交本轮修改并推送一个新版本 tag 后生效。已发布的旧 tag 指向旧工作流，不会自动增加 APK。
 
 进入仓库 **Settings → Secrets and variables → Actions → New repository secret**：
 
@@ -50,6 +50,10 @@ https://github.com/dreamoon-2/chronos-calendar/releases/latest/download/latest.j
 | `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | 私钥密码；当前为空，可不创建 |
 | `VITE_SUPABASE_URL` | `.env.local` 中项目的 Supabase URL |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | `.env.local` 中 publishable／anon key，不能用 service_role key |
+| `ANDROID_KEYSTORE_BASE64` | 原 `android/chronos-release.keystore` 文件的 Base64 内容 |
+| `ANDROID_KEYSTORE_PASSWORD` | `android/keystore.properties` 中 `storePassword` 的值 |
+| `ANDROID_KEY_ALIAS` | 同文件中 `keyAlias` 的值 |
+| `ANDROID_KEY_PASSWORD` | 同文件中 `keyPassword` 的值 |
 
 在自己电脑的 PowerShell 执行下面命令，把签名私钥复制到剪贴板，再粘贴到 `TAURI_SIGNING_PRIVATE_KEY` 的 Secret 输入框。该命令不把私钥打印到终端。填写的是 `.key` 的完整内容，不能填写文件路径或 `.pub` 文件内容。
 
@@ -57,13 +61,23 @@ https://github.com/dreamoon-2/chronos-calendar/releases/latest/download/latest.j
 Get-Content -LiteralPath "$env:USERPROFILE\.tauri\chronos-calendar-updater.key" -Raw | Set-Clipboard
 ```
 
-用编辑器打开项目根目录 `.env.local`，找到 `VITE_SUPABASE_URL` 和 `VITE_SUPABASE_PUBLISHABLE_KEY`。分别复制等号右边的值，填写到同名 Secret 中，不包括变量名、等号或包裹值的引号。当前签名私钥密码为空，跳过 `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`。配置完成后应看到三项必填 Secret 的名称；GitHub 不会再次显示已保存的值。
+用编辑器打开项目根目录 `.env.local`，找到 `VITE_SUPABASE_URL` 和 `VITE_SUPABASE_PUBLISHABLE_KEY`。分别复制等号右边的值，填写到同名 Secret 中，不包括变量名、等号或包裹值的引号。当前签名私钥密码为空，跳过 `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`。配置完成后应看到七项必填 Secret 的名称；GitHub 不会再次显示已保存的值。
 
-工作流缺少签名私钥或 Supabase 连接配置时会停止，避免发布无法验证或意外进入演示模式的程序。私钥仅交给签名构建步骤，不会打印内容。GitHub 发布权限使用 Actions 自带的 token。
+2026-10-09 已沿用本机原 Android 签名，将四项 `ANDROID_*` Secrets 加密配置到该仓库，并确认名称均存在，无需再次手动填写。以后迁移仓库或重新配置时，在项目根目录执行下面命令复制 keystore 的 Base64：
 
-### 首次发布当前 0.3.0
+```powershell
+[Convert]::ToBase64String([IO.File]::ReadAllBytes((Join-Path (Get-Location) 'android/chronos-release.keystore'))) | Set-Clipboard
+```
 
-当前项目已在 `main` 分支，`origin` 已连接 `dreamoon-2/chronos-calendar`，无需重新 `git init` 或添加远程仓库。本轮修改尚未提交。先进入项目根目录并运行检查，每项通过后再进行下一步：
+粘贴到 `ANDROID_KEYSTORE_BASE64`，再将 `keystore.properties` 中对应三项值分别填写到其余三个 Android Secrets。不要把 Base64 或密码写进工作流文件。Windows 更新私钥与 Android keystore 用途不同，均应保留原文件和备份。
+
+CI 将 Android keystore 恢复到 runner 临时目录，仅向签名 Gradle 步骤注入密码，任务结束时清理临时文件；本机继续支持已有的 `keystore.properties`。`android/release-signing.json` 保存原 APK 的公开证书 SHA-256 指纹，验签脚本核对 APK 内实际证书、包名、版本名及 versionCode，不匹配则停止发布。
+
+工作流缺少 Windows／Android 签名或 Supabase 连接配置时会提前停止，避免发布缺少 APK、无法验证或意外进入演示模式的程序。密钥仅用于签名步骤，不会打印内容。GitHub 发布权限使用 Actions 自带的 token。
+
+### 发布流程示例（0.3.0 为已完成的首次发布）
+
+当前项目已在 `main` 分支，`origin` 已连接 `dreamoon-2/chronos-calendar`，无需重新 `git init` 或添加远程仓库。下方 0.3.0 命令保留为首次发布示例，不要重复创建已存在的 tag。**发布本轮 APK 流程改动，请使用下一节的 0.3.1 步骤。** 先进入项目根目录并运行检查，每项通过后再进行下一步：
 
 ```powershell
 cd "D:\Users\dreamoon\Documents\vibe coding\Schedule\chronos_calendar_blueprint"
@@ -91,19 +105,20 @@ git tag v0.3.0
 git push origin v0.3.0
 ```
 
-GitHub Actions 会检查 tag 与应用版本、安装依赖、运行 lint 和单元测试、构建签名安装包、验证真实签名及篡改拒绝、生成更新清单，最后创建正式 Release。该 Release 会包含：
+GitHub Actions 会检查 tag 与应用版本及七项必填 Secrets，设置 Java 21／Android SDK，运行 lint 和单元测试，构建 Android 与 Windows，验证实际签名、证书身份和版本，并生成更新清单。**两端都成功后才创建正式 Release**，避免 Windows 发布成功却缺少 APK。新工作流发布的同一版本会包含四个附件（以下使用 0.3.1 示例）：
 
 ```text
-Chronos-Calendar_0.3.0_x64-setup.exe
-Chronos-Calendar_0.3.0_x64-setup.exe.sig
+Chronos-Calendar_0.3.1_x64-setup.exe
+Chronos-Calendar_0.3.1_x64-setup.exe.sig
 latest.json
+Chronos-Calendar_0.3.1_android.apk
 ```
 
-打开 [Actions](https://github.com/dreamoon-2/chronos-calendar/actions)，查看 **Publish Windows release**。绿色表示本次流程成功；红色时进入失败步骤查看原因。完成后打开 [Releases](https://github.com/dreamoon-2/chronos-calendar/releases)，确认 `v0.3.0` 是正式发布、包含上述三个附件。当前工作流只发布 Windows 安装包，Android APK 需单独构建。
+打开 [Actions](https://github.com/dreamoon-2/chronos-calendar/actions)，查看 **Publish Windows and Android release**。绿色表示本次流程成功；红色时进入失败步骤查看原因。完成后打开 [Releases](https://github.com/dreamoon-2/chronos-calendar/releases)，确认新版本是正式发布、包含上述四类附件。Android 仍通过下载 APK 后安装更新，尚未接入应用内自动安装。
 
 安装一次 0.3.0 后，当前版本检查应显示已是最新。只有以后正式发布更高版本，例如 0.3.1，才会出现可下载安装的新版本提示。
 
-本机也已准备这些文件，位于忽略的 `release/` 目录。若希望手动发布，可在 GitHub 创建对应 tag 的 Release 并同时上传上述三个文件，版本说明来自 `release/release-notes.md`。本机生成的更新 URL 已固定为该仓库与对应 tag，不要把文件发布到其他仓库后继续使用原清单。
+本机已准备同格式的当前 0.3.0 文件，位于忽略的 `release/` 目录；下一版本构建后文件名随版本改变。若手动发布新版本，应同时上传对应版本的上述四类文件，版本说明来自 `release/release-notes.md`。本机生成的更新 URL 已固定为该仓库与对应 tag，不要把文件发布到其他仓库后继续使用原清单。
 
 更新附件的文件名不含空格，避免 GitHub 规范化文件名后导致下载 URL 失效。不要在已发布 Release 中替换成使用其他密钥签名的包。
 
@@ -146,15 +161,19 @@ git push origin v0.3.1
 
 缺少 Secret 时补齐配置后可重新运行同一失败任务；如果需要修改源码或工作流，则在新的提交中修复，并为该修复发布一个递增版本。`Missing GitHub Actions secret` 表示名称或值缺失；`Tag and application versions differ` 表示 tag 与项目版本不一致；验签失败时检查是否使用了原发布私钥。
 
-本机打包验证：
+本机打包验证（需要原 Windows 和 Android 签名文件、JDK 21+ 及 Android SDK）：
 
 ```powershell
+npm run build:cap
+npm run mobile:sync
+.\android\gradlew.bat -p android assembleRelease --no-daemon --console=plain
+npm run android:prepare
 npm run desktop:build
 npm run release:verify
 npm run release:prepare
 ```
 
-`desktop:build` 自动读取本机用户目录中的私钥；CI 或其他机器也可通过 `TAURI_SIGNING_PRIVATE_KEY`、`TAURI_SIGNING_PRIVATE_KEY_PASSWORD` 指定，环境文件不会自动用于签名。`release:verify` 验证实际安装包、公钥、版本，并确保篡改后的包被拒绝。`release:prepare` 生成待上传文件，不会自行上传。
+`desktop:build` 自动读取本机用户目录中的私钥；CI 或其他机器也可通过 `TAURI_SIGNING_PRIVATE_KEY`、`TAURI_SIGNING_PRIVATE_KEY_PASSWORD` 指定，环境文件不会自动用于签名。`release:verify` 验证实际 Windows 安装包、公钥、版本，并确保篡改后的包被拒绝。`android:prepare` 验证实际 APK，生成 `release/` 中的版本化附件及本机核对元数据。`release:prepare` 同时要求正确的签名 APK 与 Windows 安装包，生成待上传文件，不会自行上传。
 
 ## 完整验收方法
 

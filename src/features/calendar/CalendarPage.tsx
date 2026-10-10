@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   type CalendarRef,
-  type DateClickInfo,
   type DateSelectInfo,
   type EventClickInfo,
   type EventDropInfo,
   type EventResizeDoneInfo,
 } from '@fullcalendar/react'
-import { addDays, addHours, format } from 'date-fns'
+import { addDays, format } from 'date-fns'
 import type { EventRow, EventUpdate } from '../../types/database'
 import { AppShell } from '../../components/layout/AppShell'
 import { useToast } from '../../components/ui/Toast'
@@ -18,6 +17,7 @@ import { useAuth } from '../auth/AuthProvider'
 import { useCategories } from '../categories/categoryQueries'
 import { EventDetails } from '../events/EventDetails'
 import { EventEditor } from '../events/EventEditor'
+import { EventDraftList } from '../events/EventDraftList'
 import { toCalendarEvent, type CalendarEvent } from '../events/eventMappers'
 import {
   emptyForm,
@@ -44,6 +44,7 @@ interface EditorState {
   eventId?: string
   version?: number
   original?: EventRow
+  draftId?: string
 }
 
 function selectToForm(info: DateSelectInfo): EventFormValues {
@@ -59,22 +60,6 @@ function selectToForm(info: DateSelectInfo): EventFormValues {
     startTime: format(info.start, 'HH:mm'),
     endDate: toDateOnly(info.end),
     endTime: format(info.end, 'HH:mm'),
-  }
-}
-
-function dateClickToForm(info: DateClickInfo): EventFormValues {
-  if (info.allDay) {
-    const d = toDateOnly(info.date)
-    return { ...emptyForm(), allDay: true, startDate: d, endDate: d }
-  }
-  const end = addHours(info.date, 1)
-  return {
-    ...emptyForm(),
-    allDay: false,
-    startDate: toDateOnly(info.date),
-    startTime: format(info.date, 'HH:mm'),
-    endDate: toDateOnly(end),
-    endTime: format(end, 'HH:mm'),
   }
 }
 
@@ -122,6 +107,8 @@ export function CalendarPage() {
   const invalidateAll = useInvalidateAll()
 
   const [editor, setEditor] = useState<EditorState | null>(null)
+  const editorCloseRef = useRef<(() => void) | null>(null)
+  const [draftsOpen, setDraftsOpen] = useState(false)
   const [details, setDetails] = useState<CalendarEvent | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [hiddenCategories, setHiddenCategories] = useState<Set<string>>(
@@ -132,7 +119,7 @@ export function CalendarPage() {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       const element = event.target as HTMLElement | null
-      if (editor || settingsOpen || !undoEntry || element?.closest('input, textarea, select, [contenteditable="true"]')) return
+      if (editor || settingsOpen || draftsOpen || !undoEntry || element?.closest('input, textarea, select, [contenteditable="true"]')) return
       if ((event.ctrlKey || event.metaKey) && !event.shiftKey && event.key.toLowerCase() === 'z') {
         event.preventDefault()
         setDetails(null)
@@ -141,15 +128,16 @@ export function CalendarPage() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [editor, settingsOpen, undoEntry, undo])
+  }, [editor, settingsOpen, draftsOpen, undoEntry, undo])
 
   // Android 返回键：优先关闭弹层，否则退出应用
   useBackButton(
     useCallback(() => {
       if (editor) {
-        setEditor(null)
+        editorCloseRef.current?.()
         return true
       }
+      if (draftsOpen) { setDraftsOpen(false); return true }
       if (details) {
         setDetails(null)
         return true
@@ -159,7 +147,7 @@ export function CalendarPage() {
         return true
       }
       return false
-    }, [editor, details, settingsOpen]),
+    }, [editor, details, settingsOpen, draftsOpen]),
   )
 
   const categoryById = useMemo(
@@ -232,10 +220,6 @@ export function CalendarPage() {
     },
     [api],
   )
-
-  const onDateClick = useCallback((info: DateClickInfo) => {
-    setEditor({ mode: 'create', initial: dateClickToForm(info) })
-  }, [])
 
   const onEventClick = useCallback(
     (info: EventClickInfo) => {
@@ -327,6 +311,7 @@ export function CalendarPage() {
         onToday={() => api()?.today()}
         onChangeView={(v) => api()?.changeView(v)}
         onCreate={() => openCreate()}
+        onOpenDrafts={() => { api()?.unselect(); setDraftsOpen(true) }}
         onOpenSettings={() => setSettingsOpen(true)}
         sidebarOpen={sidebarOpen}
         onToggleSidebar={() => setSidebarOpen((v) => !v)}
@@ -350,7 +335,6 @@ export function CalendarPage() {
               onChangeZoom={changeZoom}
               onDatesSet={handleDatesSet}
               onSelect={onSelect}
-              onDateClick={onDateClick}
               onEventClick={onEventClick}
               onEventDrop={onEventDrop}
               onEventResize={onEventResize}
@@ -376,10 +360,19 @@ export function CalendarPage() {
           categories={categoriesQ.data ?? []}
           categoriesReady={categoriesQ.isSuccess}
           original={editor.original}
+          draftId={editor.draftId}
+          closeRef={editorCloseRef}
           onChanged={remember}
           onClose={() => setEditor(null)}
         />
       )}
+
+      {draftsOpen && <EventDraftList userId={user!.id} onClose={() => setDraftsOpen(false)} onSelect={draft => {
+        setDraftsOpen(false)
+        setEditor({ mode: 'create', draftId: draft.id, initial: { ...draft.values,
+          categoryId: categoriesQ.data?.some(category => category.id === draft.values.categoryId) ? draft.values.categoryId : null,
+        } })
+      }} />}
 
       <EventDetails
         event={details}

@@ -32,7 +32,7 @@ pub fn set_reminders(user_id: String, reminders: Vec<Reminder>, state: State<'_,
 #[tauri::command]
 pub fn test_notification(app: AppHandle) -> Result<(), String> {
     app.notification().builder().title("Chronos 日程提醒")
-        .body("测试成功，开启提醒后将在日程开始前通知你。").show().map_err(|error| error.to_string())
+        .body("测试成功，可在单条日程中勾选提醒并选择提前时间。").show().map_err(|error| error.to_string())
 }
 
 pub fn start(app: &AppHandle) {

@@ -13,8 +13,8 @@ export function useCalendarRange() {
   const handleDatesSet = useCallback((info: DatesSetInfo) => {
     setRange({ start: info.start, end: info.end })
     setViewType(info.view.type)
-    setCurrentDate(info.view.currentStart)
-    setTitle(format(info.view.currentStart, 'yyyy/MM'))
+    setCurrentDate(info.view.calendar.getDate())
+    setTitle(format(info.view.currentStart, info.view.type === 'multiMonthYear' ? 'yyyy年' : 'yyyy/MM'))
   }, [])
 
   return { range, viewType, currentDate, title, handleDatesSet }

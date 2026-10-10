@@ -12,15 +12,16 @@ interface CalendarToolbarProps {
   onToday: () => void
   onChangeView: (view: string) => void
   onCreate: () => void
+  onOpenDrafts: () => void
   sidebarOpen?: boolean
   onToggleSidebar?: () => void
 }
 
-const VIEW_BUTTONS: { value: string; label: string; mobileOnly?: boolean }[] = [
-  { value: 'timeGridWeek', label: '周' },
+const VIEW_BUTTONS: { value: string; label: string }[] = [
+  { value: 'multiMonthYear', label: '年' },
   { value: 'dayGridMonth', label: '月' },
+  { value: 'timeGridWeek', label: '周' },
   { value: 'timeGridDay', label: '日' },
-  { value: 'timeGridThreeDay', label: '三日', mobileOnly: true },
 ]
 
 export function CalendarToolbar({
@@ -33,6 +34,7 @@ export function CalendarToolbar({
   onToday,
   onChangeView,
   onCreate,
+  onOpenDrafts,
   sidebarOpen = true,
   onToggleSidebar,
 }: CalendarToolbarProps) {
@@ -79,15 +81,15 @@ export function CalendarToolbar({
       </div>
 
       <div className="flex w-full flex-wrap items-center gap-1.5 sm:w-auto">
-        <div className="flex overflow-hidden rounded-lg bg-slate-100 p-0.5 dark:bg-slate-800">
+        <div role="group" aria-label="日历视图" className="flex overflow-hidden rounded-lg bg-slate-100 p-0.5 dark:bg-slate-800">
           {VIEW_BUTTONS.map((b) => (
             <button
               key={b.value}
               type="button"
               onClick={() => onChangeView(b.value)}
+              aria-pressed={viewType === b.value}
               className={clsx(
                 'rounded-md px-3 py-1 text-sm font-medium transition',
-                b.mobileOnly && 'sm:hidden',
                 viewType === b.value
                   ? 'bg-white text-brand-700 shadow-sm dark:bg-slate-700 dark:text-white'
                   : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200',
@@ -101,7 +103,7 @@ export function CalendarToolbar({
           <div
             className="flex items-center gap-1 rounded-lg border border-slate-200 px-1 dark:border-slate-700"
             role="group"
-            aria-label={viewType.startsWith('timeGrid') ? '时间轴缩放' : '月历缩放'}
+            aria-label={viewType.startsWith('timeGrid') ? '时间轴缩放' : '日历缩放'}
           >
             <button
               type="button"
@@ -144,6 +146,7 @@ export function CalendarToolbar({
             </button>
           </div>
 
+        <Button variant="secondary" onClick={onOpenDrafts} className="px-3 py-1.5 text-xs">日程草稿</Button>
         <Button onClick={onCreate} className="hidden px-3 py-1.5 sm:inline-flex">
           ＋ 添加日程
         </Button>

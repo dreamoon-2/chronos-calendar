@@ -1,5 +1,6 @@
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve, join } from 'node:path'
+import { spawnSync } from 'node:child_process'
 
 const root = resolve(import.meta.dirname, '..')
 const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
@@ -20,6 +21,9 @@ const contentStart = changelog.indexOf('\n', start) + 1
 const next = changelog.indexOf('\n## ', contentStart)
 const notes = changelog.slice(contentStart, next < 0 ? undefined : next).trim()
 if (!notes) throw new Error('当前版本说明不能为空。')
+// 发布准备必须包含同版本、同 Android 签名身份的 APK。
+const android = spawnSync(process.execPath, [join(root, 'scripts/prepare-android-release.mjs')], { cwd: root, env: process.env, stdio: 'inherit' })
+if (android.error || android.status !== 0) throw new Error('Android APK 验证失败，停止准备发布文件。')
 // 使用不含空格的发布文件名，避免 GitHub 规范化附件名导致 URL 不匹配。
 const asset = `Chronos-Calendar_${pkg.version}_x64-setup.exe`
 const manifest = {
@@ -39,4 +43,4 @@ copyFileSync(installer, join(output, asset))
 copyFileSync(`${installer}.sig`, join(output, `${asset}.sig`))
 writeFileSync(join(output, 'latest.json'), JSON.stringify(manifest, null, 2) + '\n')
 writeFileSync(join(output, 'release-notes.md'), notes + '\n')
-console.log(`已准备 ${tag} 发布文件：release/ 中的安装包、签名、latest.json 与版本说明。`)
+console.log(`已准备 ${tag} 发布文件：release/ 中的 Windows 安装包、签名、latest.json、Android APK 与版本说明。`)

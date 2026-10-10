@@ -5,6 +5,20 @@ def keystoreProperties = new Properties()
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
+// CI 从 Secrets 注入；本机继续使用已忽略的 keystore.properties。
+def signingFromEnvironment = System.getenv('ANDROID_KEYSTORE_PATH') != null
+def releaseSigning = signingFromEnvironment ? [
+    storeFile: System.getenv('ANDROID_KEYSTORE_PATH'),
+    storePassword: System.getenv('ANDROID_KEYSTORE_PASSWORD'),
+    keyAlias: System.getenv('ANDROID_KEY_ALIAS'),
+    keyPassword: System.getenv('ANDROID_KEY_PASSWORD')
+] : keystoreProperties
+def hasReleaseSigning = ['storeFile', 'storePassword', 'keyAlias', 'keyPassword'].every {
+    releaseSigning[it] != null && !releaseSigning[it].toString().isEmpty()
+}
+if (signingFromEnvironment && !hasReleaseSigning) {
+    throw new GradleException('Android release signing environment is incomplete')
+}
 
 android {
     namespace = "com.chronos.calendar"
@@ -13,8 +27,8 @@ android {
         applicationId "com.chronos.calendar"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 3
-        versionName "0.3.0"
+        versionCode 4
+        versionName "0.3.1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -26,11 +40,11 @@ android {
     buildToolsVersion = "36.0.0"
     signingConfigs {
         release {
-            if (keystorePropertiesFile.exists()) {
-                storeFile rootProject.file(keystoreProperties['storeFile'])
-                storePassword keystoreProperties['storePassword']
-                keyAlias keystoreProperties['keyAlias']
-                keyPassword keystoreProperties['keyPassword']
+            if (hasReleaseSigning) {
+                storeFile rootProject.file(releaseSigning['storeFile'])
+                storePassword releaseSigning['storePassword']
+                keyAlias releaseSigning['keyAlias']
+                keyPassword releaseSigning['keyPassword']
             }
         }
     }
@@ -38,7 +52,7 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            if (keystorePropertiesFile.exists()) {
+            if (hasReleaseSigning) {
                 signingConfig signingConfigs.release
             }
         }

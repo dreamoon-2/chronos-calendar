@@ -7,10 +7,11 @@
 ## 功能
 
 - 邮箱魔法链接（Magic Link）与邮箱 + 密码两种登录、注册、会话保持、退出、设置密码。
-- 中文周（默认）/ 月 / 日视图，移动端额外提供“三日”紧凑视图；周一为一周开始；今天高亮、当前时间红线、上/下一段导航、跳转今天。
+- 中文年／月／周／日视图，默认周视图；响应式年历包含十二个月，切换时淡入；周一为一周开始；今天高亮、当前时间红线、上/下一段导航、跳转今天。
 - 日程新增、编辑、软删除；全天事件、跨天/跨午夜事件；分类配色（浅底 + 深字 + 左侧色条）；备注；时间重叠分栏显示。
-- 周 / 日 / 三日时间表支持 50%–200% 缩放：按钮、滑块、Ctrl+滚轮、触屏双指缩放；保持正在查看的时间位置并记住比例。月视图保留控件并调整月历行高。拖拽与选择按 15 分钟对齐。
-- 保存失败保留表单，点击编辑器外不关闭；修改自动保存为本机草稿，重新打开可恢复。创建表单优先展示标题、时间、类型，跨天与备注按需展开；Ctrl+Enter 保存。
+- 周／日时间表支持 50%–200% 缩放：按钮、滑块、Ctrl+滚轮、触屏双指缩放；保持正在查看的时间位置并记住比例。年／月视图保留控件，分别调整月份排列和月历行高。拖拽与选择按 15 分钟对齐。
+- 时间表点击或拖动先选中时段，再点击选中区域创建日程；保存失败保留表单，点击编辑器外不关闭。用户主动保存本机草稿，从功能栏「日程草稿」选择修改与填入，普通新建不自动恢复。关闭未保存表单时可选择保存草稿、不保存或继续编辑；Ctrl+Enter 保存日程。
+- 系统提醒在单条日程中选择，默认关闭，可设开始时或提前 5／10／15／30 分钟；提醒设置按账号保存在当前设备，Windows 安装版负责通知。
 - 删除、移动、调整时长与编辑后可撤销，支持 Ctrl+Z，保留本次页面会话最近 20 步；遇到其他设备更新时提示冲突。
 - 细网格、蓝色日期强调与浅色日程块；周／日显示具体日期，标题最多两行，短日程优先显示标题，悬停查看完整时间、备注和类型。
 - 基础任务类型：课程、科研、会议、生活、任务、工作、运动、休息。新建日程可快捷选择，缺少的类型自动创建；设置中也可逐个添加。自定义类型及已有类型均可选 10 种主题色或自由取色，并预览配色；修改类型颜色会更新该类型的所有日程。
@@ -132,7 +133,7 @@ npm run desktop:build    # 生成安装包
 ```
 
 产物：`src-tauri/target/release/chronos-calendar.exe`（独立可运行）与
-`src-tauri/target/release/bundle/nsis/Chronos Calendar_0.3.0_x64-setup.exe`（安装包）。
+`src-tauri/target/release/bundle/nsis/Chronos Calendar_0.3.1_x64-setup.exe`（安装包）。
 
 桌面程序内嵌构建时的网页资源。修改源码或执行 `npm run build` 后，已经运行的 exe 不会自动更新；需要退出托盘中的旧程序，重新执行 `npm run desktop:build`，再启动新版 exe 或安装包。开发期间可用 `npm run desktop:dev` 查看实时更新。界面顶部显示版本号，便于核对当前程序。
 
@@ -162,23 +163,25 @@ Android 版复用同一套 React 前端，用 Capacitor 打包为原生 APK。**
 
 前置依赖：
 
-- JDK 17+（本仓库当前用 JDK 24，Gradle 8.14 原生支持）
+- JDK 21+（本机使用 JDK 24，GitHub 发布使用 Temurin 21）
 - Android SDK（`platform-tools`、`build-tools`、`platforms;android-36`）
 
 命令：
 
-```bash
+```powershell
 npm install
 npm run build:cap            # 以 Capacitor 模式构建（禁用 PWA SW）
 npm run mobile:sync          # 复制 web 资产并同步插件
-cd android && .\gradlew.bat assembleDebug    # 生成 debug APK（免签名，可直接安装）
-cd android && .\gradlew.bat assembleRelease  # 生成签名 release APK
+.\android\gradlew.bat -p android assembleDebug    # 生成 debug APK（免配置发布签名）
+.\android\gradlew.bat -p android assembleRelease  # 生成签名 release APK
+npm run android:prepare     # 验证 APK 包名、版本和原签名，复制到 release/
 ```
 
 产物：
 
 - debug：`android/app/build/outputs/apk/debug/app-debug.apk`
 - release（已签名）：`android/app/build/outputs/apk/release/app-release.apk`
+- APK：`release/Chronos-Calendar_0.3.1_android.apk`，也可从 [v0.3.1 Release](https://github.com/dreamoon-2/chronos-calendar/releases/tag/v0.3.1) 下载。推送新版本 tag 时，Actions 同时构建 Windows 和 Android，两端检查通过后在同一 Release 上传安装包。Android 当前仍通过下载安装 APK 更新，未接入应用内自动安装。配置步骤见 [自动更新与双端发布](docs/AUTO_UPDATE.md)。
 
 > ⚠️ **国内网络注意**：`dl.google.com` / `maven.google.com` 直连被墙，本仓库已做如下适配：
 >
@@ -193,9 +196,9 @@ cd android && .\gradlew.bat assembleRelease  # 生成签名 release APK
 >    # 已写入 %LOCALAPPDATA%\Android\Sdk\licenses\android-sdk-license
 >    ```
 >
-> `local.properties` 已生成（指向 SDK）；如需换机器，改 `sdk.dir` 与 `android/gradle.properties` 的 `org.gradle.java.home` 即可。
+> `local.properties` 已生成（指向 SDK）；换机器时设置 `sdk.dir` 和 `JAVA_HOME`。GitHub CI 使用官方 Maven 仓库、Gradle 下载地址和 SHA-256 校验；本机保留国内镜像。
 >
-> 发布签名已配置：`android/keystore.properties` + `android/chronos-release.keystore`（均已 gitignore）。**这是开发用 keystore，密码为示例值**；正式发布请用你自己的 `keytool` 生成新 keystore，替换这两个文件并妥善保管（丢失无法恢复签名身份）。
+> 发布签名已配置：`android/keystore.properties` + `android/chronos-release.keystore`（均已 gitignore）。请备份并沿用原密钥；新旧 APK 必须保持相同签名才能覆盖安装。`android/release-signing.json` 只保存公开证书指纹，发布时会核对该身份，避免误用其他签名。
 
 ## 手工验收（双设备闭环）
 

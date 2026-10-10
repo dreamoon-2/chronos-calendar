@@ -4,10 +4,22 @@
 
 当前目录和功能入口见 [项目结构说明](PROJECT_STRUCTURE.md)，文档导航见 [README](README.md)。原始规格中的目录树保留为早期设计记录。
 
+## v0.3.1 — 2026-10-10
+
+- 完成点击／拖选先选中、再次点击选区创建日程；鼠标、轻触、月历缩放后的日期命中、年历日期、Esc 和导航清选均已验证。
+- 系统提醒改为单条日程选择与独立提前量，默认关闭，旧统一提醒开关不再生效；设置按账号保存在本机，无需修改线上数据库。
+- 草稿改为主动保存，多份草稿从功能栏列表选择修改／填入；普通新建为空，关闭未保存表单可自行选择保存、放弃或继续编辑。旧版草稿兼容读取，不覆盖原日程。
+- 新增响应式年视图，顺序统一为年／月／周／日；淡入切换支持系统减少动态效果偏好。修复 FullCalendar 7.1.1 在开发 StrictMode 重复挂载后丢失月／年行高观察器的问题。
+- 验证通过：类型检查、ESLint、48 项单元测试、32 项桌面／移动浏览器测试；另外 6 项按平台或真实测试账号条件跳过。拖选创建的动态位置测试额外连续执行 5 次通过。
+- Windows release 与 NSIS 签名打包通过，实际 Minisign 验证通过；Android release APK 的包名、版本 0.3.1（versionCode 4）及原签名证书验证通过。
+- Windows 原生 v0.3.1 冒烟检查通过：年／月／周／日顺序、十二个月、空白新建、默认不提醒及草稿列表。检查没有创建、修改或删除正式账号日程。
+- 产物：`release/Chronos-Calendar_0.3.1_x64-setup.exe`、`release/Chronos-Calendar_0.3.1_android.apk`。系统通知弹出和 Android 真机手势仍需按 [体验指南](FEATURE_TESTING.md) 手动验收。
+- 用户已确认推送和发布；以 `v0.3.1` 标签触发双端构建，正式附件见 [GitHub Release](https://github.com/dreamoon-2/chronos-calendar/releases/tag/v0.3.1)。
+
 | 里程碑 | 内容 | 状态 |
 |---|---|---|
 | M0 | Vite/React/TS/Tailwind/ESLint/tsconfig/scripts，锁定依赖，演示模式提示 | ✅ 完成 |
-| M1 | 周/月/日/三日视图、分类配色、全天栏、当前时间线、编辑表单、拖拽 | ✅ 完成 |
+| M1 | 年／月／周／日视图、分类配色、全天栏、当前时间线、编辑表单、拖拽 | ✅ 完成 |
 | M2 | Supabase 客户端、Auth、events/categories CRUD、RLS 迁移（SQL 已交付） | ✅ 代码完成（RLS 未在真实库验证） |
 | M3 | Realtime、版本冲突、断线/前台恢复、拖拽回滚 | ✅ 代码完成（真实同步未验证） |
 | M4 | vite-plugin-pwa、manifest、真实 PNG 图标、部署文档 | ✅ 完成 |
@@ -45,7 +57,7 @@
 - 复用现有前端：`tauri.conf.json` 的 `frontendDist` 指向 `../dist`，`beforeBuildCommand` 为 `npm run build`；`identifier = com.chronos.calendar`，NSIS 安装包。
 - `vite.config.ts`：Tauri 环境（`TAURI_ENV_PLATFORM`）下固定端口 1420、禁用 PWA Service Worker；Web 构建不受影响。
 - `src/platform/detectPlatform.ts` 提供运行时平台检测（`isTauri` / `isCapacitor`），登录页在原生环境提示优先「邮箱 + 密码」。
-- 当前 Windows 版本 0.3.0：`src-tauri/target/release/chronos-calendar.exe`（独立）+ `src-tauri/target/release/bundle/nsis/Chronos Calendar_0.3.0_x64-setup.exe`（安装包）。
+- 当前 Windows 版本 0.3.1：`src-tauri/target/release/chronos-calendar.exe`（独立）+ `src-tauri/target/release/bundle/nsis/Chronos Calendar_0.3.1_x64-setup.exe`（安装包）。
 - 网络：GitHub 直连超时，用 `TAURI_BUNDLER_TOOLS_GITHUB_MIRROR=https://ghfast.top` 走镜像下载 NSIS 工具链。
 - **桌面增强**：系统托盘（`tray-icon`，左键唤起 + 显示/退出菜单）、关闭到托盘（`on_window_event` 拦截 `CloseRequested`，隐藏而非退出）、单实例（`tauri-plugin-single-instance`，重复启动唤起已有窗口）。
 
@@ -95,5 +107,15 @@
 - 验证：43 项单元测试、21 项浏览器测试通过，5 项按环境跳过；类型检查、lint、Rust 检查和签名 NSIS 构建通过。真实安装包验签通过，篡改包被拒绝。
 - Windows 实际启动与手动检查均返回“尚未发布”；v0.3.0 设置入口、默认启动检查和原生更新器 IPC 权限已验证。仓库尚无 Release，线上下载、安装、重启的完整升级验收需正式发布后进行。
 - 本轮只重建 Windows；Android 工程版本已同步，已有 APK 仍为上一轮 0.2.0 产物。
+
+### 2026-10-09：Windows／Android 同步发布配置
+
+- `v0.3.0` Windows 已在 GitHub 自动发布；本轮扩展发布工作流，下一新版本在同一 Release 上传 Windows 安装包、签名、更新清单及 Android APK。
+- 新增 Java 21、Android SDK、Capacitor 构建／同步、Gradle 环境变量签名与临时 keystore 清理；CI 使用官方依赖仓库与经过 SHA-256 校验的 Gradle 分发。
+- 原 Android keystore 的四项 Secrets 已加密配置并确认存在，未打印密钥或密码。Windows 与 Android 签名均保留原身份。
+- `android/release-signing.json` 固定旧 APK 公开证书指纹；`android:prepare` 核对 APK 实际包名、versionName、versionCode、签名后复制版本化附件。两端通过才创建 Release。
+- 本机已通过与 CI 相同的环境变量签名构建，生成 Android 0.3.0（versionCode 3）；实际验签与旧版身份一致。旧版本 APK 和篡改包均被拒绝，完整发布文件已生成。
+- 新工作流的 YAML、PowerShell 语法及发布条件在本机核对；完整云端流程需本轮改动提交后，推送新的正式版本 tag 验证。
+- 本轮验证：43 项单元测试、类型检查和 lint 通过；工作流预检接受完整配置，拒绝缺少 Android 签名及版本不一致，CI Gradle 下载地址和校验配置转换通过。
 
 

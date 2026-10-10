@@ -14,6 +14,7 @@ interface AppShellProps {
   onToday: () => void
   onChangeView: (view: string) => void
   onCreate: () => void
+  onOpenDrafts: () => void
   onOpenSettings: () => void
   /** 桌面端侧栏（迷你月历 + 分类筛选）。 */
   sidebar?: ReactNode
@@ -33,6 +34,7 @@ export function AppShell({
   onToday,
   onChangeView,
   onCreate,
+  onOpenDrafts,
   onOpenSettings,
   sidebar,
   sidebarOpen = true,
@@ -66,6 +68,7 @@ export function AppShell({
         onToday={onToday}
         onChangeView={onChangeView}
         onCreate={onCreate}
+        onOpenDrafts={onOpenDrafts}
         sidebarOpen={sidebarOpen}
         onToggleSidebar={onToggleSidebar}
       />

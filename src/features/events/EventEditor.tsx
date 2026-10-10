@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState, type MutableRefObject } from 'react'
 import type { CategoryRow, EventRow } from '../../types/database'
 import { Button } from '../../components/ui/Button'
 import { Modal } from '../../components/ui/Modal'
@@ -8,7 +8,9 @@ import { eventPalette, FALLBACK_COLOR } from '../../utils/colors'
 import { DEFAULT_CATEGORIES } from '../categories/categoryPresets'
 import { useCreateCategory } from '../categories/categoryQueries'
 import { useAuth } from '../auth/AuthProvider'
-import { draftKey, readDraft, writeDraft } from './eventDrafts'
+import { deleteDraft, saveDraft } from './eventDrafts'
+import { ensureNotificationPermission, getEventReminders, setEventReminder } from '../desktop/eventReminders'
+import { platform } from '../../platform/detectPlatform'
 import {
   useCreateEvent,
   useSoftDeleteEvent,
@@ -29,6 +31,8 @@ interface EventEditorProps {
   categories: CategoryRow[]
   categoriesReady: boolean
   original?: EventRow
+  draftId?: string
+  closeRef?: MutableRefObject<(() => void) | null>
   onChanged: (before: EventRow, after: EventRow, label: string) => void
   onClose: () => void
 }
@@ -47,6 +51,8 @@ export function EventEditor({
   categories,
   categoriesReady,
   original,
+  draftId: initialDraftId,
+  closeRef,
   onChanged,
   onClose,
 }: EventEditorProps) {
@@ -56,44 +62,48 @@ export function EventEditor({
   const deleteM = useSoftDeleteEvent()
   const createCategoryM = useCreateCategory()
   const { user } = useAuth()
-  const key = draftKey(user!.id, eventId)
-  const [draft] = useState(() => readDraft(key))
-  const finished = useRef(false)
-
-  const [values, setValues] = useState<EventFormValues>(draft?.values ?? initial)
+  const [values, setValues] = useState<EventFormValues>(() => ({ ...initial,
+    reminderMinutes: mode === 'edit' && eventId ? getEventReminders(user!.id)[eventId] ?? null : initial.reminderMinutes ?? null,
+  }))
   const [moreOpen, setMoreOpen] = useState(() => {
-    const form = draft?.values ?? initial
+    const form = initial
     return form.description.length > 0 || form.endDate !== form.startDate
   })
-  const [draftVersion, setDraftVersion] = useState(draft?.version ?? version)
-  const [draftSaved, setDraftSaved] = useState(!!draft)
+  const [draftId, setDraftId] = useState(initialDraftId)
+  const [savedValues, setSavedValues] = useState<EventFormValues | null>(null)
+  const [confirmClose, setConfirmClose] = useState(false)
   const [errors, setErrors] = useState<EventFormErrors>({})
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [saving, setSaving] = useState(false)
 
   const set = <K extends keyof EventFormValues>(k: K, v: EventFormValues[K]) =>
     setValues((p) => ({ ...p, [k]: v, ...(k === 'startDate' && p.endDate === p.startDate ? { endDate: v as string } : {}) }))
 
-  const dirty = JSON.stringify(values) !== JSON.stringify(initial)
-  const staleDraft = mode === 'edit' && draftVersion !== version
-  useEffect(() => {
-    if (finished.current) return
-    const saved = writeDraft(key, dirty ? { values, version: draftVersion } : null)
-    setDraftSaved(dirty && saved)
-  }, [key, values, dirty, draftVersion])
-
-  const discardDraft = () => {
-    writeDraft(key, null)
-    setValues(initial)
-    setDraftVersion(version)
-    setErrors({})
-    setMoreOpen(initial.description.length > 0 || initial.endDate !== initial.startDate)
+  const unchanged = JSON.stringify(values) === JSON.stringify(savedValues ?? { ...initial,
+    reminderMinutes: mode === 'edit' && eventId ? getEventReminders(user!.id)[eventId] ?? null : initial.reminderMinutes ?? null,
+  })
+  const onSaveDraft = (andClose = false) => {
+    try {
+      const draft = saveDraft(user!.id, values, draftId)
+      setDraftId(draft.id)
+      setSavedValues({ ...values })
+      toast.success('已保存到日程草稿')
+      if (andClose) onClose()
+    } catch { toast.error('草稿保存失败，请保留表单并重试') }
   }
-
   const close = () => {
-    if (!busy) onClose()
+    if (busy) return
+    if (unchanged) onClose()
+    else setConfirmClose(true)
   }
 
-  const busy = createM.isPending || updateM.isPending || deleteM.isPending || createCategoryM.isPending
+  useEffect(() => {
+    if (!closeRef) return
+    closeRef.current = close
+    return () => { closeRef.current = null }
+  })
+
+  const busy = saving || createM.isPending || updateM.isPending || deleteM.isPending || createCategoryM.isPending
   const selectedCategory = categories.find((category) => category.id === values.categoryId)
   const palette = eventPalette(selectedCategory?.color ?? FALLBACK_COLOR)
 
@@ -115,22 +125,30 @@ export function EventEditor({
   }
 
   const onSave = async () => {
-    if (busy || staleDraft) return
+    if (busy) return
     const errs = validateEventForm(values)
     setErrors(errs)
     if (Object.keys(errs).length > 0) return
+    setSaving(true)
     try {
       const payload = formToEventInsert(values)
+      if (values.reminderMinutes != null) await ensureNotificationPermission()
+      let saved: EventRow
       if (mode === 'create') {
-        await createM.mutateAsync(payload)
+        saved = await createM.mutateAsync(payload)
         toast.success('已创建日程')
       } else if (eventId && version != null) {
-        const saved = await updateM.mutateAsync({ id: eventId, version, patch: payload })
+        saved = await updateM.mutateAsync({ id: eventId, version, patch: payload })
         if (original) onChanged(original, saved, '修改')
         toast.success('已保存修改')
+      } else return
+      // 云端保存成功后，本机存储失败也不能让重试创建出重复日程。
+      try { setEventReminder(user!.id, saved.id, values.reminderMinutes ?? null) }
+      catch { toast.error('日程已保存，但本机提醒设置保存失败，请重新编辑提醒') }
+      if (draftId) {
+        try { deleteDraft(user!.id, draftId) }
+        catch { toast.error('日程已保存，原草稿清理失败，可在草稿列表中删除') }
       }
-      finished.current = true
-      writeDraft(key, null)
       onClose()
     } catch (err) {
       if (err instanceof ConflictError) {
@@ -138,7 +156,7 @@ export function EventEditor({
       } else {
         toast.error(toErrorMessage(err))
       }
-    }
+    } finally { setSaving(false) }
   }
 
   const onDelete = async () => {
@@ -151,8 +169,6 @@ export function EventEditor({
       const deleted = await deleteM.mutateAsync({ id: eventId, version })
       if (original) onChanged(original, deleted, '删除')
       toast.success('已删除日程')
-      finished.current = true
-      writeDraft(key, null)
       onClose()
     } catch (err) {
       if (err instanceof ConflictError) {
@@ -171,13 +187,15 @@ export function EventEditor({
           void onSave()
         }
       }}>
-        {(draftSaved || staleDraft) && (
-          <div className="flex items-center justify-between gap-3 rounded-lg bg-sky-50 px-3 py-2 text-xs text-sky-800 dark:bg-sky-950 dark:text-sky-200" role="status">
-            <span>{staleDraft ? '草稿基于旧版本，请保留需要的内容后丢弃草稿，重新编辑最新日程。' : draft ? '已恢复草稿 · 修改自动保存在本机' : '草稿已自动保存在本机'}</span>
-            <button type="button" disabled={busy} onClick={discardDraft} className="shrink-0 underline">丢弃草稿</button>
+        {confirmClose && <div className="space-y-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-100" role="alert">
+          <p>还有未保存的内容，要保存为草稿吗？</p>
+          <div className="flex flex-wrap gap-2">
+            <Button disabled={busy} onClick={() => onSaveDraft(true)}>保存草稿并关闭</Button>
+            <Button variant="secondary" disabled={busy} onClick={onClose}>不保存并关闭</Button>
+            <Button variant="secondary" onClick={() => setConfirmClose(false)}>继续编辑</Button>
           </div>
-        )}
-        {dirty && !draftSaved && !staleDraft && <p role="status" className="text-xs text-amber-700 dark:text-amber-300">本机暂时无法保存草稿，请保持编辑器打开并重试保存。</p>}
+        </div>}
+        {savedValues && unchanged && <p role="status" className="text-xs text-sky-700 dark:text-sky-300">已保存到日程草稿，可从功能栏再次打开。</p>}
         <div>
           <label className={labelCls} htmlFor="ev-title">
             标题 <span className="text-red-500">*</span>
@@ -321,6 +339,19 @@ export function EventEditor({
           <p className="mt-1 text-xs text-slate-400">在设置中可添加自定义类型、选择主题色或调整颜色。</p>
         </div>
 
+        <div className="space-y-2 rounded-lg border border-slate-200 p-3 dark:border-slate-700">
+          <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+            <input type="checkbox" aria-label="此日程系统提醒" checked={values.reminderMinutes != null} onChange={e => set('reminderMinutes', e.target.checked ? 10 : null)} />
+            提醒此日程
+          </label>
+          {values.reminderMinutes != null && <label className="flex items-center gap-2 text-sm">提醒时间
+            <select aria-label="此日程提前提醒时间" className={inputCls} value={values.reminderMinutes} onChange={e => set('reminderMinutes', Number(e.target.value))}>
+              {[0, 5, 10, 15, 30].map(minutes => <option key={minutes} value={minutes}>{minutes === 0 ? '开始时' : `提前 ${minutes} 分钟`}</option>)}
+            </select>
+          </label>}
+          <p className="text-xs text-slate-400">{platform.isTauri ? '仅当前设备提醒；全天日程以 09:00 为基准。' : '提醒设置保存在当前设备，系统通知需使用 Windows 安装版。'}</p>
+        </div>
+
         <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
           <button type="button" aria-expanded={moreOpen} aria-controls="ev-more" onClick={() => setMoreOpen(!moreOpen)} className="text-sm text-slate-500 dark:text-slate-300">{moreOpen ? '−' : '＋'} 更多选项 · 跨天与备注</button>
           <div id="ev-more" hidden={!moreOpen} className="mt-3 space-y-3">
@@ -348,12 +379,13 @@ export function EventEditor({
         <div className="flex items-center gap-3 pt-1">
           <Button
             onClick={onSave}
-            disabled={busy || staleDraft}
+            disabled={busy}
             className="flex-1"
             type="button"
           >
             {busy ? '保存中…' : '保存'}
           </Button>
+          <Button variant="secondary" disabled={busy} onClick={() => onSaveDraft()}>保存草稿</Button>
           {mode === 'edit' && (
             <Button
               variant={confirmDelete ? 'danger' : 'secondary'}

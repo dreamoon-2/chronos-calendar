@@ -1,6 +1,6 @@
 [package]
 name = "chronos-calendar"
-version = "0.3.0"
+version = "0.3.1"
 description = "Chronos Calendar 跨端同步日程表（桌面版）"
 authors = ["Chronos"]
 edition = "2021"

@@ -1,6 +1,6 @@
 # Chronos Calendar：项目结构与功能说明
 
-更新日期：2026-10-09。当前版本：0.3.0。
+更新日期：2026-10-10。当前版本：0.3.1。
 
 这是一个已实现的个人日程应用。网页、Windows 桌面程序和 Android 应用共用 `src/` 下的 React 前端；配置 Supabase 后，通过账号同步日程。未配置凭证时，使用明确标注的本地演示模式。
 
@@ -83,10 +83,11 @@ chronos_calendar_blueprint/
 ├── android/                       # Capacitor Android 原生工程
 │   ├── app/src/main/               # Activity、Manifest、资源
 │   ├── app/build.gradle            # 应用构建与签名配置
+│   ├── release-signing.json        # 原 Android 发布证书公开指纹，保证覆盖安装兼容
 │   ├── gradle/                     # Gradle Wrapper 配置
 │   └── ...                         # Gradle／Capacitor 工程文件
 ├── scripts/                       # 图标、SDK、更新签名配置、版本与发布工具
-├── .github/workflows/             # 推送版本 tag 后构建并发布 Windows 更新
+├── .github/workflows/             # 推送版本 tag 后构建并发布 Windows／Android
 ├── CHANGELOG.md                   # 每个正式版本的更新说明
 ├── .env.example                   # 环境变量示例
 ├── .gitignore / .gitattributes      # 忽略规则与文件属性
@@ -125,15 +126,16 @@ chronos_calendar_blueprint/
 | `features/auth/` | `LoginPage.tsx` | 邮箱密码登录／注册、邮件链接登录与原生平台提示 |
 | `features/auth/` | `AuthProvider.tsx`、`authService.ts` | 会话获取与监听、退出、密码修改、认证错误中文化 |
 | `features/calendar/` | `CalendarPage.tsx` | 组合日历、侧栏、日程弹窗与设置；处理点击、选择、拖拽、拉伸及失败回滚 |
-| `features/calendar/` | `CalendarGrid.tsx` | 配置 FullCalendar、周／月／日／三日视图、全天栏、当前时间线和 15 分钟拖拽对齐 |
+| `features/calendar/` | `CalendarGrid.tsx` | FullCalendar 年／月／周／日视图、淡入切换、全天栏、当前时间线和 15 分钟拖拽对齐 |
 | `features/calendar/` | `CalendarToolbar.tsx` | 日期导航、视图切换、添加日程与缩放控件 |
 | `features/calendar/` | `CalendarEventCard.tsx` | 标题优先、最多两行，短日程隐藏时间，悬停完整信息和任务类型色条 |
 | `features/calendar/` | `Sidebar.tsx` | 桌面迷你月历、跳转日期、任务类型筛选 |
 | `features/calendar/` | `useCalendarRange.ts` | 维护当前可视日期范围、视图、标题与定位日期 |
 | `features/calendar/` | `useCalendarZoom.ts` | 50%–200% 时间轴缩放，25% 步长、重置与本机记忆 |
 | `features/calendar/` | `useCalendarGestures.ts` | Ctrl+滚轮／双指缩放、保留时间锚点、抑制手势误点击 |
-| `features/events/` | `EventEditor.tsx`、`EventDetails.tsx` | 简洁新建／编辑／删除表单、失败保留、跨天与备注展开、草稿恢复 |
-| `features/events/` | `eventDrafts.ts` | 按账号和日程隔离的本机草稿读取、校验、写入和清除 |
+| `features/calendar/` | `useCalendarSelection.ts` | 点击／拖选先选中、再次点击确认创建；导航、切换视图、Esc 清选 |
+| `features/events/` | `EventEditor.tsx`、`EventDetails.tsx` | 简洁表单、失败保留、关闭保存选择、逐条提醒、跨天与备注展开 |
+| `features/events/` | `eventDrafts.ts`、`EventDraftList.tsx` | 按账号保存多份草稿、兼容旧草稿、列表选择修改与填入；普通新建不自动恢复 |
 | `features/events/` | `useEventUndo.ts` | 最近 20 步撤销，恢复软删除和修改前数据，处理连续撤销版本及冲突 |
 | `features/events/` | `eventSchema.ts` | 表单默认值、标题与时间校验、表单／数据库载荷转换 |
 | `features/events/` | `eventMappers.ts` | 数据库日程转换为 FullCalendar 事件，并附带主题色和版本 |
@@ -142,8 +144,8 @@ chronos_calendar_blueprint/
 | `features/categories/` | `categoryPresets.ts` | 八种基础任务类型及其默认主题色 |
 | `features/categories/` | `categoriesApi.ts`、`categoryQueries.ts` | 类型的读取、创建、改名、改色、删除和缓存刷新 |
 | `features/settings/` | `SettingsPage.tsx` | 添加基础／自定义类型、主题色管理、登录邮箱与密码设置 |
-| `features/desktop/` | `DesktopSettings.tsx` | 原生开机启动开关、通知权限、提醒提前量与测试通知 |
-| `features/desktop/` | `desktopPreferences.ts` | 按账号保存在本机的提醒开关与提前量 |
+| `features/desktop/` | `DesktopSettings.tsx` | 原生开机启动开关、逐条提醒使用说明、通知权限与测试通知 |
+| `features/desktop/` | `eventReminders.ts` | 按账号和日程 ID 保存本机提醒提前量，检查通知权限；未选择则不提醒 |
 | `features/desktop/` | `reminderSchedule.ts`、`useDesktopReminders.ts` | 查询今起三天日程，每分钟刷新，将提醒计划交给原生后台 |
 | `features/updates/` | `SoftwareUpdateProvider.tsx` | 启动检查、更新提示、下载／安装状态、编辑器保护与失败重试 |
 | `features/updates/` | `SoftwareUpdateSettings.tsx`、`updateState.ts` | 设置入口、启动检查偏好、版本说明与进度文字 |
@@ -177,7 +179,7 @@ chronos_calendar_blueprint/
 
 云端变化通过 Realtime 触发重新查询；拖拽与拉伸直接调用事件 API，并在失败时撤销界面上的移动。编辑与删除带上 `version`，避免静默覆盖其他设备的新修改。
 
-编辑器的修改自动写入本机草稿，只有成功保存／删除或主动丢弃才清除；旧版本草稿禁止直接覆盖新日程。成功修改／删除记录到撤销栈，撤销通过相同版本条件恢复原记录，不创建重复日程。
+编辑器只在用户主动点击「保存草稿」或关闭时选择保存后写入本机草稿库。新建／编辑不自动填入旧草稿，从功能栏「日程草稿」手动选择后可修改并创建新日程，成功后移除对应草稿；旧草稿不会覆盖现有日程。成功修改／删除记录到撤销栈，撤销通过相同版本条件恢复原记录，不创建重复日程。系统提醒按单条日程在当前设备选择，无需数据库迁移。
 
 桌面提醒计划由前端查询近期日程生成，Rust `reminders.rs` 每 10 秒检查到期项；通知成功后记录去重键。窗口隐藏到托盘仍运行原生线程；退出后停止。开机启动通过 Tauri 插件注册当前安装程序，并传入 `--autostart` 隐藏启动。
 
@@ -191,9 +193,9 @@ chronos_calendar_blueprint/
 | 演示日程与类型 | `localStorage`，键 `chronos.demo.v1` | 否 |
 | 深浅色偏好 | `localStorage`，键 `chronos.theme` | 否 |
 | 时间轴缩放比例 | `localStorage`，键 `chronos.calendar.zoom` | 否 |
-| 未提交草稿 | `localStorage`，键 `chronos.draft.<账号>.<日程或new>` | 否，成功提交或主动丢弃时清除 |
+| 主动保存的草稿 | `localStorage`，键 `chronos.drafts.<账号>`；旧 `chronos.draft.*` 兼容读取 | 否，可在草稿列表删除或填入后提交 |
 | 撤销历史 | 当前日历页面内存，最近 20 步 | 否，刷新／退出清除 |
-| 桌面提醒偏好 | `localStorage`，键 `chronos.desktop.<账号>` | 否 |
+| 单条日程提醒 | `localStorage`，键 `chronos.event-reminders.<账号>`，按日程 ID 保存提前分钟数 | 否，浏览器／Windows／Android 分别保存 |
 | 启动检查更新偏好 | `localStorage`，键 `chronos.updater.auto` | 否，默认开启 |
 | 通知去重记录 | Tauri 本机配置目录的 `delivered-reminders.json` | 否 |
 | 开机启动 | Windows 当前用户的启动注册项，由 Tauri 插件管理 | 否 |
@@ -223,6 +225,7 @@ chronos_calendar_blueprint/
 | `npm run release:version -- 0.3.1` | 同步前端、Tauri、Cargo、Android 版本 |
 | `npm run release:verify` | 检查实际安装包签名、版本及篡改拒绝 |
 | `npm run release:prepare` | 生成 `release/` 中待上传的安装包、签名、更新清单和说明 |
+| `npm run android:prepare` | 验证 APK 实际包名、版本和原证书，复制为版本化发布文件 |
 | `npm run build:cap` | Android 用的网页资源构建到 `dist/`，禁用 PWA Service Worker |
 | `npm run mobile:sync` | 将当前网页资源复制到 Android 并同步插件 |
 
@@ -234,7 +237,7 @@ Windows 本机重新打包后需从托盘退出旧程序，再运行新版 exe �
 
 - `tests/unit/features/events/eventSchema.test.ts`：表单校验与日期时间载荷转换。
 - `tests/unit/features/events/eventMappers.test.ts`：FullCalendar 事件映射与配色。
-- `tests/unit/features/events/editorReliability.test.tsx`：失败保留、草稿恢复、旧版本草稿阻止覆盖。
+- `tests/unit/features/events/editorReliability.test.tsx`：失败保留、主动草稿、关闭选择、账号隔离和旧草稿兼容。
 - `tests/unit/features/events/undo.test.tsx`：删除恢复、连续撤销与版本冲突。
 - `tests/unit/features/desktop/reminders.test.ts`：提前量、全天 09:00、过期过滤和通知去重键。
 - `tests/unit/features/updates/`：启动检查、检查接口、网络错误、失败重试、下载进度、重复操作与编辑器保护。
@@ -243,6 +246,7 @@ Windows 本机重新打包后需从托盘退出旧程序，再运行新版 exe �
 - `tests/e2e/calendar.spec.ts`：应用加载、演示模式创建、可选真实登录创建。
 - `tests/e2e/calendar-improvements.spec.ts`：缩放、类型快捷选择、主题色更新与自由取色。
 - `tests/e2e/calendar-experience.spec.ts`：草稿、防误关闭、撤销、拖拽／拉伸、日期、月历缩放、Ctrl+滚轮与真实双指事件。
+- `tests/e2e/calendar-v031.spec.ts`：点击／拖选／轻触的两步创建、年／月日期与放大后命中、年历及淡入动画、减少动态效果、逐条提醒持久化。
 - `supabase/tests/rls.test.sql`：数据库账号隔离；需另外在测试数据库中执行。
 
 Playwright 覆盖桌面 Chrome 和手机尺寸 Chrome。可用 `E2E_BASE_URL` 指向其他端口；真实登录用例需要 `E2E_EMAIL`、`E2E_PASSWORD`。浏览器测试不等同于已验证 Windows 或 Android 的全部原生行为。
@@ -255,8 +259,9 @@ Playwright 覆盖桌面 Chrome 和手机尺寸 Chrome。可用 `E2E_BASE_URL` �
 | `dist/` | 网页或原生容器使用的前端构建结果 | 通过对应构建命令重新生成 |
 | `src-tauri/target/` | Rust 编译缓存与 Windows 产物 | 通过 Tauri 构建生成 |
 | `src-tauri/target/release/chronos-calendar.exe` | 当前 Windows 独立程序 | 退出旧进程后启动新版 |
-| `src-tauri/target/release/bundle/nsis/` | Windows 安装包 | 当前版本文件名为 `Chronos Calendar_0.3.0_x64-setup.exe` |
+| `src-tauri/target/release/bundle/nsis/` | Windows 安装包 | 当前本地版本文件名为 `Chronos Calendar_0.3.1_x64-setup.exe` |
 | `android/app/src/main/assets/public/` | 从 `dist/` 复制的网页资源 | 通过 `mobile:sync` 更新，不手改 |
+| `release/Chronos-Calendar_<版本>_android.apk` | 验签后的 Android 发布附件 | 与 Windows 安装包一起上传同一正式 Release |
 | `android/app/build/outputs/apk/` | Android debug／release APK | 通过 Gradle 构建生成 |
 | `android/.gradle/`、`android/**/build/` | Gradle 缓存与中间结果 | 构建工具管理 |
 | `test-results/`、`playwright-report/`、`coverage/` | 测试输出 | 按需要查看或重新生成 |

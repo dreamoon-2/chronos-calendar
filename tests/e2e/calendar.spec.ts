@@ -38,7 +38,7 @@ test.describe('演示模式（无凭证时）', () => {
     await expect(page.getByText('新建日程').first()).toBeVisible()
 
     await page.locator('#ev-title').fill('E2E 测试日程')
-    await page.getByRole('button', { name: '保存' }).click()
+    await page.getByRole('button', { name: '保存', exact: true }).click()
 
     // 保存成功后表单关闭，日程已写入后端并出现在日历 DOM 中。
     await expect(page.getByText('新建日程').first()).toBeHidden()
@@ -68,7 +68,7 @@ test.describe('真实 Supabase（需 E2E_EMAIL / E2E_PASSWORD）', () => {
     const title = `E2E ${Date.now()}`
     await page.getByRole('button', { name: /添加日程|新建日程/ }).first().click()
     await page.locator('#ev-title').fill(title)
-    await page.getByRole('button', { name: '保存' }).click()
+    await page.getByRole('button', { name: '保存', exact: true }).click()
     await expect(page.getByText('新建日程').first()).toBeHidden()
     await expect(page.getByText(title).first()).toBeAttached({ timeout: 15_000 })
   })

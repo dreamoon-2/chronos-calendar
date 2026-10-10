@@ -16,6 +16,7 @@ export interface EventFormValues {
   endDate: string
   endTime: string
   categoryId: string | null
+  reminderMinutes?: number | null
 }
 
 export type EventFormErrors = Partial<Record<keyof EventFormValues, string>>
@@ -31,6 +32,7 @@ export function emptyForm(initial?: Partial<EventFormValues>): EventFormValues {
     endDate: today,
     endTime: '10:00',
     categoryId: null,
+    reminderMinutes: null,
     ...initial,
   }
 }

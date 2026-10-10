@@ -31,7 +31,7 @@ async function anchorAt(page: Page, y?: number) {
   }, y)
 }
 
-test('简洁表单防误关闭，关闭和刷新后可恢复草稿', async ({ page }) => {
+test('草稿主动保存到列表，刷新后新建为空，手动选择可修改并填入', async ({ page }) => {
   await page.getByRole('button', { name: /添加日程|新建日程/ }).first().click()
   await expect(page.locator('#ev-desc')).toBeHidden()
   await page.locator('#ev-title').fill('草稿体验验证')
@@ -40,13 +40,22 @@ test('简洁表单防误关闭，关闭和刷新后可恢复草稿', async ({ pa
   await page.mouse.click(5, 5)
   await expect(page.getByRole('dialog', { name: '新建日程' })).toBeVisible()
   await page.getByRole('button', { name: '关闭', exact: true }).click()
+  await page.getByRole('button', { name: '保存草稿并关闭', exact: true }).click()
   await page.reload()
   await page.getByRole('button', { name: /添加日程|新建日程/ }).first().click()
+  await expect(page.locator('#ev-title')).toHaveValue('')
+  await page.getByRole('button', { name: '关闭', exact: true }).click()
+  await page.getByRole('button', { name: '日程草稿', exact: true }).click()
+  await expect(page.getByRole('dialog', { name: '日程草稿' })).toContainText('草稿体验验证')
+  await page.getByRole('button', { name: '修改并填入', exact: true }).click()
   await expect(page.locator('#ev-title')).toHaveValue('草稿体验验证')
   await expect(page.locator('#ev-desc')).toBeVisible()
   await expect(page.locator('#ev-desc')).toHaveValue('未完成的备注')
   await page.getByRole('button', { name: '保存', exact: true }).click()
   await expect(page.getByRole('dialog')).toHaveCount(0)
+  await page.getByRole('button', { name: '日程草稿', exact: true }).click()
+  await expect(page.getByText('暂无草稿', { exact: false })).toBeVisible()
+  await page.getByRole('button', { name: '关闭', exact: true }).click()
   await page.getByRole('button', { name: /添加日程|新建日程/ }).first().click()
   await expect(page.locator('#ev-title')).toHaveValue('')
 })

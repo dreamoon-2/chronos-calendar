@@ -3,10 +3,12 @@
 buildscript {
     
     repositories {
-        // 国内镜像优先，避免 maven.google.com / mavenCentral 被墙导致下载失败
-        maven { url 'https://maven.aliyun.com/repository/google' }
-        maven { url 'https://maven.aliyun.com/repository/central' }
-        maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
+        // 本机保留国内镜像；GitHub CI 使用官方仓库。
+        if (System.getenv('CI') != 'true') {
+            maven { url 'https://maven.aliyun.com/repository/google' }
+            maven { url 'https://maven.aliyun.com/repository/central' }
+            maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
+        }
         google()
         mavenCentral()
     }
@@ -23,9 +25,11 @@ apply from: "variables.gradle"
 
 allprojects {
     repositories {
-        maven { url 'https://maven.aliyun.com/repository/google' }
-        maven { url 'https://maven.aliyun.com/repository/central' }
-        maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
+        if (System.getenv('CI') != 'true') {
+            maven { url 'https://maven.aliyun.com/repository/google' }
+            maven { url 'https://maven.aliyun.com/repository/central' }
+            maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
+        }
         google()
         mavenCentral()
     }
