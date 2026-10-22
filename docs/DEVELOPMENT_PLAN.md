@@ -20,6 +20,7 @@
 - 验证：类型检查、ESLint、55 项单元测试、45 项桌面／移动浏览器测试通过；11 项按平台或真实账号条件跳过；生产网页构建通过。
 - Windows release 与 NSIS 签名打包通过，Minisign 验签通过；Android release APK 0.4.0（versionCode 5）验签通过，包名与原签名证书一致。产物：`release/Chronos-Calendar_0.4.0_x64-setup.exe`、`release/Chronos-Calendar_0.4.0_android.apk`、`release/latest.json`。
 - 本机验证新 exe 时曾仍显示 0.3.1：原因是旧的托盘进程仍在运行，Tauri 单实例聚焦了旧窗口；退出旧进程后重启，UI Automation 读取顶栏为 `v0.4.0`。已在 README 与体验指南补充排查说明。
+- 已推送 `main` 并创建 `v0.4.0` tag；GitHub Actions 双端构建与发布成功，产物包含 Windows 安装包、签名、Android APK 与 `latest.json`：[GitHub Release](https://github.com/dreamoon-2/chronos-calendar/releases/tag/v0.4.0)。
 - 尚待真实环境验证：Supabase 线上库执行 `202610190001_tasks.sql` 与 `202610200001_task_event_link.sql` 后的待办同步、日程拖回与 RLS；Android 真机待办长按拖拽、数字键盘与通知体验仍需手动验收。
 
 ## v0.3.1 — 2026-10-10
