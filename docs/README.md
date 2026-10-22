@@ -5,7 +5,7 @@
 | 文档 | 用途 |
 | --- | --- |
 | [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) | 当前目录树、文件职责、功能入口、数据流与维护方法 |
-| [FEATURE_TESTING.md](FEATURE_TESTING.md) | 0.3.1 本地体验、手工验收、自动化测试与启动排错 |
+| [FEATURE_TESTING.md](FEATURE_TESTING.md) | 0.4.0 本地体验、手工验收、自动化测试与启动排错 |
 | [AUTO_UPDATE.md](AUTO_UPDATE.md) | Windows 启动检查、软件内更新、双端签名与 GitHub 自动发布 Windows／APK |
 | [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md) | 开发进度、验证记录与后续待办 |
 | [PROJECT_SPEC.md](PROJECT_SPEC.md) | 初始产品与技术设计，含数据库、权限与验收要求 |

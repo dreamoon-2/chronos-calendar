@@ -14,6 +14,14 @@ export class OfflineError extends Error {
   }
 }
 
+/** 待办表不存在或结构未升级：提示用户执行数据库迁移。 */
+export class TaskSetupError extends Error {
+  constructor(message = '待办表尚未创建：请在 Supabase 执行迁移 202610190001_tasks.sql 后重试') {
+    super(message)
+    this.name = 'TaskSetupError'
+  }
+}
+
 /** 从 Supabase 错误对象提取可读信息。 */
 export function toErrorMessage(err: unknown): string {
   if (err instanceof ConflictError || err instanceof OfflineError) {

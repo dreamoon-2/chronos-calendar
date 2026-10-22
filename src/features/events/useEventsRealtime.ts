@@ -19,6 +19,7 @@ export function useEventsRealtime(): void {
     const invalidate = debounce(() => {
       qc.invalidateQueries({ queryKey: ['events'] })
       qc.invalidateQueries({ queryKey: ['categories'] })
+      qc.invalidateQueries({ queryKey: ['tasks'] })
     }, 250)
 
     const channel = client
@@ -43,6 +44,16 @@ export function useEventsRealtime(): void {
         },
         invalidate,
       )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tasks',
+          filter: `user_id=eq.${user.id}`,
+        },
+        invalidate,
+      )
       .subscribe()
 
     return () => {
@@ -61,6 +72,7 @@ export function useResyncOnRecover(): void {
     const resync = () => {
       qc.invalidateQueries({ queryKey: ['events'] })
       qc.invalidateQueries({ queryKey: ['categories'] })
+      qc.invalidateQueries({ queryKey: ['tasks'] })
     }
     window.addEventListener('focus', resync)
     window.addEventListener('online', resync)

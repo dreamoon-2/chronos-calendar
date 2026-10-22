@@ -9,6 +9,7 @@ export function CalendarEventCard({ info }: { info: EventDisplayInfo }) {
   const props = event.extendedProps as {
     categoryColor?: string
     categoryName?: string | null
+    taskId?: string | null
   }
   const palette = eventPalette(props.categoryColor ?? '#6a52ec')
   const isTimeGrid = info.view.type.startsWith('timeGrid')
@@ -25,7 +26,7 @@ export function CalendarEventCard({ info }: { info: EventDisplayInfo }) {
   const tooltip = [event.title, time, props.categoryName ?? '未分类', (event.extendedProps.description as string) || ''].filter(Boolean).join('\n')
 
   return (
-    <div className="chronos-event-card" data-timed={isTimeGrid && !event.allDay} style={style} title={tooltip} aria-label={tooltip}>
+    <div className="chronos-event-card" data-timed={isTimeGrid && !event.allDay} data-task={Boolean(props.taskId)} style={style} title={tooltip} aria-label={tooltip}>
       <div className="chronos-event-title">{event.title}</div>
       {!event.allDay && isTimeGrid && timeText ? (
         <div className="chronos-event-time">{timeText}</div>

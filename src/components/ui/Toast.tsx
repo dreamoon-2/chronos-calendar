@@ -20,6 +20,7 @@ interface ToastContextValue {
   toast: (message: string, kind?: ToastKind) => void
   success: (message: string) => void
   error: (message: string) => void
+  clear: () => void
 }
 
 const ToastContext = createContext<ToastContextValue | null>(null)
@@ -43,10 +44,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const success = useCallback((m: string) => toast(m, 'success'), [toast])
   const error = useCallback((m: string) => toast(m, 'error'), [toast])
+  const clear = useCallback(() => setItems([]), [])
 
   const value = useMemo<ToastContextValue>(
-    () => ({ toast, success, error }),
-    [toast, success, error],
+    () => ({ toast, success, error, clear }),
+    [toast, success, error, clear],
   )
 
   return (

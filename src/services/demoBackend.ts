@@ -9,6 +9,9 @@ import type {
   EventInsert,
   EventRow,
   EventUpdate,
+  TaskInsert,
+  TaskRow,
+  TaskUpdate,
 } from '../types/database'
 import { DEFAULT_CATEGORIES } from '../features/categories/categoryPresets'
 import { ConflictError } from '../utils/errors'
@@ -20,6 +23,7 @@ const STORAGE_KEY = 'chronos.demo.v1'
 interface DemoState {
   categories: CategoryRow[]
   events: EventRow[]
+  tasks: TaskRow[]
 }
 
 function uid(): string {
@@ -60,6 +64,7 @@ function buildSeed(): DemoState {
       id: uid(),
       user_id: DEMO_USER_ID,
       category_id: categories[categoryIdx].id,
+      task_id: null,
       title,
       description: '演示数据',
       all_day: false,
@@ -89,6 +94,7 @@ function buildSeed(): DemoState {
     id: uid(),
     user_id: DEMO_USER_ID,
     category_id: categories[4].id,
+    task_id: null,
     title: '论文计划',
     description: '全天安排（演示）',
     all_day: true,
@@ -102,7 +108,43 @@ function buildSeed(): DemoState {
     updated_at: now.toISOString(),
   })
 
-  return { categories, events }
+  const tasks: TaskRow[] = [
+    {
+      id: uid(),
+      user_id: DEMO_USER_ID,
+      title: '整理论文阅读笔记',
+      notes: '',
+      done: false,
+      estimated_minutes: 60,
+      category_id: categories[1].id,
+      created_at: now.toISOString(),
+      updated_at: now.toISOString(),
+    },
+    {
+      id: uid(),
+      user_id: DEMO_USER_ID,
+      title: '准备周会材料',
+      notes: '',
+      done: false,
+      estimated_minutes: 60,
+      category_id: categories[2].id,
+      created_at: new Date(now.getTime() - 60_000).toISOString(),
+      updated_at: new Date(now.getTime() - 60_000).toISOString(),
+    },
+    {
+      id: uid(),
+      user_id: DEMO_USER_ID,
+      title: '回复邮件',
+      notes: '',
+      done: true,
+      estimated_minutes: 30,
+      category_id: categories[4].id,
+      created_at: new Date(now.getTime() - 120_000).toISOString(),
+      updated_at: new Date(now.getTime() - 120_000).toISOString(),
+    },
+  ]
+
+  return { categories, events, tasks }
 }
 
 function shouldSeed(): boolean {
@@ -113,15 +155,19 @@ function load(): DemoState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) {
-      const parsed = JSON.parse(raw) as DemoState
+      const parsed = JSON.parse(raw) as Partial<DemoState>
       if (Array.isArray(parsed.categories) && Array.isArray(parsed.events)) {
-        return parsed
+        return {
+          categories: parsed.categories,
+          events: parsed.events,
+          tasks: Array.isArray(parsed.tasks) ? parsed.tasks : [],
+        }
       }
     }
   } catch {
     // 忽略损坏数据，重新播种
   }
-  const seeded = shouldSeed() ? buildSeed() : { categories: [], events: [] }
+  const seeded = shouldSeed() ? buildSeed() : { categories: [], events: [], tasks: [] }
   save(seeded)
   return seeded
 }
@@ -136,6 +182,13 @@ function save(state: DemoState): void {
 
 function sortCategories(list: CategoryRow[]): CategoryRow[] {
   return [...list].sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name))
+}
+
+function sortTasks(list: TaskRow[]): TaskRow[] {
+  return [...list].sort((a, b) => {
+    if (a.done !== b.done) return a.done ? 1 : -1
+    return b.created_at.localeCompare(a.created_at)
+  })
 }
 
 export const demoBackend = {
@@ -178,6 +231,9 @@ export const demoBackend = {
     state.events = state.events.map((e) =>
       e.category_id === id ? { ...e, category_id: null } : e,
     )
+    state.tasks = state.tasks.map((task) =>
+      task.category_id === id ? { ...task, category_id: null } : task,
+    )
     save(state)
   },
 
@@ -198,6 +254,7 @@ export const demoBackend = {
       id: uid(),
       user_id: DEMO_USER_ID,
       category_id: input.category_id,
+      task_id: input.task_id ?? null,
       title: input.title,
       description: input.description,
       all_day: input.all_day,
@@ -242,5 +299,44 @@ export const demoBackend = {
     state.events[idx] = row
     save(state)
     return row
+  },
+
+  listTasks(): TaskRow[] {
+    return sortTasks(load().tasks)
+  },
+
+  createTask(input: TaskInsert): TaskRow {
+    const state = load()
+    const now = new Date().toISOString()
+    const row: TaskRow = {
+      id: uid(),
+      user_id: DEMO_USER_ID,
+      title: input.title.trim(),
+      notes: input.notes ?? '',
+      done: false,
+      estimated_minutes: input.estimated_minutes ?? 60,
+      category_id: input.category_id ?? null,
+      created_at: now,
+      updated_at: now,
+    }
+    state.tasks.push(row)
+    save(state)
+    return row
+  },
+
+  updateTask(id: string, patch: TaskUpdate): TaskRow {
+    const state = load()
+    const idx = state.tasks.findIndex((task) => task.id === id)
+    if (idx < 0) throw new Error('待办不存在')
+    const row = { ...state.tasks[idx], ...patch, updated_at: new Date().toISOString() }
+    state.tasks[idx] = row
+    save(state)
+    return row
+  },
+
+  deleteTask(id: string): void {
+    const state = load()
+    state.tasks = state.tasks.filter((task) => task.id !== id)
+    save(state)
   },
 }

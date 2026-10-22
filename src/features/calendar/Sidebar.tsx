@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import clsx from 'clsx'
 import {
   addDays,
@@ -18,6 +18,8 @@ interface SidebarProps {
   onToggleCategory: (id: string) => void
   onShowAllCategories: () => void
   onGotoDate: (date: Date) => void
+  /** 待办面板由日历页注入，避免侧栏依赖具体数据查询。 */
+  taskPanel?: ReactNode
 }
 
 const WEEKDAYS = ['一', '二', '三', '四', '五', '六', '日']
@@ -29,6 +31,7 @@ export function Sidebar({
   onToggleCategory,
   onShowAllCategories,
   onGotoDate,
+  taskPanel,
 }: SidebarProps) {
   const gridStart = useMemo(
     () => startOfWeek(startOfMonth(currentDate), { weekStartsOn: 1 }),
@@ -97,6 +100,8 @@ export function Sidebar({
           })}
         </div>
       </section>
+
+      {taskPanel}
 
       {/* 分类筛选 */}
       <section className="border-t border-slate-200 pt-4 dark:border-slate-700">

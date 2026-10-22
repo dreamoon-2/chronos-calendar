@@ -1,6 +1,6 @@
 import { supabase } from '../../services/supabaseClient'
 import { demoBackend } from '../../services/demoBackend'
-import { ConflictError } from '../../utils/errors'
+import { ConflictError, TaskSetupError } from '../../utils/errors'
 import { toDateOnly } from '../../utils/dates'
 import type {
   CalendarRange,
@@ -66,7 +66,12 @@ export async function createEvent(
     .insert({ ...input, user_id: userId })
     .select('*')
     .single()
-  if (error) throw error
+  if (error) {
+    if (error.code === 'PGRST204' && error.message.includes('task_id')) {
+      throw new TaskSetupError('待办关联字段尚未创建：请在 Supabase 执行迁移 202610200001_task_event_link.sql 后重试')
+    }
+    throw error
+  }
   return data as EventRow
 }
 
@@ -115,6 +120,7 @@ export async function softDeleteEvent(
 export async function restoreEvent(userId: string, before: EventRow, expectedVersion: number): Promise<EventRow> {
   const patch = {
     title: before.title, description: before.description, category_id: before.category_id,
+    task_id: before.task_id,
     all_day: before.all_day, start_at: before.start_at, end_at: before.end_at,
     start_date: before.start_date, end_date: before.end_date, deleted_at: before.deleted_at,
   }

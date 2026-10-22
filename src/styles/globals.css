@@ -22,3 +22,23 @@ body {
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom);
 }
+
+/* 登录 ↔ 日历：整页左右滑动进入，替代不明显的淡入淡出。 */
+.chronos-page-enter-forward {
+  animation: chronos-page-in-forward 280ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.chronos-page-enter-back {
+  animation: chronos-page-in-back 280ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+@keyframes chronos-page-in-forward {
+  from { transform: translateX(36px); }
+  to { transform: translateX(0); }
+}
+@keyframes chronos-page-in-back {
+  from { transform: translateX(-36px); }
+  to { transform: translateX(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chronos-page-enter-forward,
+  .chronos-page-enter-back { animation: none; }
+}

@@ -75,6 +75,7 @@ describe('eventToForm', () => {
       id: '1',
       user_id: 'u',
       category_id: null,
+      task_id: null,
       title: 'x',
       description: '',
       all_day: true,

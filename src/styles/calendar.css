@@ -5,29 +5,121 @@
   --fc-classic-primary: #0284c7;
   --fc-classic-foreground: #475569;
   --fc-classic-now: #f43f5e;
+  /* 原生选区只负责底色，边框和范围由 SelectionOverlay 绘制。 */
+  --fc-classic-highlight: #0284c72b;
   touch-action: pan-x pan-y;
+}
+.chronos-selection-overlay {
+  position: absolute; inset: 0; z-index: 15;
+  pointer-events: none; overflow: hidden;
+}
+.chronos-selection-box {
+  position: absolute;
+  border: 2px solid #0284c7;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #0284c714, #0284c705);
+  box-shadow: inset 0 0 0 1px #ffffffcc, 0 4px 16px #0284c726;
+}
+.chronos-selection-handle {
+  position: absolute; left: 10px; right: 10px; z-index: 2;
+  height: 6px; padding: 0; border: 0; border-radius: 999px;
+  background: #0284c7;
+  box-shadow: 0 0 0 1px #ffffffdd, 0 2px 7px #0284c766;
+  pointer-events: auto; cursor: ns-resize; touch-action: none;
+}
+.chronos-selection-handle::before {
+  content: ''; position: absolute; left: -6px; right: -6px; top: -8px; bottom: -8px;
+}
+.chronos-selection-handle:hover,
+.chronos-selection-handle:focus-visible {
+  height: 8px; background: #0369a1; outline: none;
+  box-shadow: 0 0 0 1px #fff, 0 3px 10px #0284c799;
+}
+.chronos-selection-handle-top { top: -3px; }
+.chronos-selection-handle-bottom { bottom: -3px; }
+body.chronos-resizing,
+body.chronos-resizing * {
+  cursor: ns-resize !important;
+  user-select: none !important;
+}
+.dark .chronos-selection-handle {
+  background: #38bdf8;
+  box-shadow: 0 0 0 1px #0f172a, 0 2px 7px #38bdf866;
+}
+.dark .chronos-selection-handle:hover,
+.dark .chronos-selection-handle:focus-visible {
+  background: #7dd3fc;
+  box-shadow: 0 0 0 1px #0f172a, 0 3px 10px #38bdf899;
+}
+.dark .chronos-selection-box {
+  border-color: #38bdf8;
+  background: linear-gradient(180deg, #38bdf81f, #38bdf808);
+  box-shadow: inset 0 0 0 1px #0f172acc, 0 4px 16px #38bdf826;
+}
+.chronos-task-dropzone {
+  position: absolute; left: 50%; bottom: 78px; transform: translateX(-50%);
+  z-index: 34; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  min-width: 210px; max-width: calc(100% - 28px);
+  border: 2px dashed #0284c7; border-radius: 16px;
+  padding: 10px 18px; background: #f0f9ff; color: #0369a1;
+  font-size: 13px; text-align: center; pointer-events: auto;
+  box-shadow: 0 12px 32px #0284c726;
+}
+.chronos-task-dropzone span { font-size: 11px; font-weight: 400; color: #0284c7; }
+.dark .chronos-task-dropzone {
+  border-color: #38bdf8; background: #082f49; color: #bae6fd;
+  box-shadow: 0 12px 32px #38bdf826;
+}
+.dark .chronos-task-dropzone span { color: #7dd3fc; }
+/* 桌面端拖到左侧待办栏即可，不需要浮层，避免向下拖动时误触。 */
+@media (min-width: 768px) {
+  .chronos-task-dropzone { display: none; }
 }
 .chronos-selection-hint {
   position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
-  z-index: 25; pointer-events: none; max-width: calc(100% - 24px);
-  border: 1px solid #bae6fd; border-radius: 12px; padding: 8px 12px;
+  z-index: 26; max-width: calc(100% - 24px);
+  display: flex; align-items: center; gap: 10px;
+  border: 1px solid #7dd3fc; border-radius: 14px; padding: 8px 10px 8px 12px;
   background: #f0f9ff; color: #0369a1; font-size: 12px;
-  box-shadow: 0 4px 16px #0f172a12;
+  box-shadow: 0 10px 30px #0284c71f;
 }
+.chronos-selection-hint > [role="status"] { min-width: 0; }
+.chronos-selection-actions { display: flex; flex-shrink: 0; gap: 6px; }
+.chronos-selection-primary, .chronos-selection-cancel {
+  border-radius: 8px; padding: 5px 9px; font-size: 12px; font-weight: 600;
+  white-space: nowrap; transition: background-color 160ms ease;
+}
+.chronos-selection-primary { background: #0284c7; color: #fff; }
+.chronos-selection-primary:hover { background: #0369a1; }
+.chronos-selection-cancel { color: #0369a1; }
+.chronos-selection-cancel:hover { background: #e0f2fe; }
 .dark .chronos-selection-hint { background: #082f49; color: #bae6fd; border-color: #075985; }
+.dark .chronos-selection-primary { background: #0284c7; }
+.dark .chronos-selection-cancel { color: #bae6fd; }
+.dark .chronos-selection-cancel:hover { background: #0c4a6e; }
 .dark .chronos-calendar-surface {
   --fc-classic-border: #263344;
   --fc-classic-today: #122539;
   --fc-classic-background: #0f172a;
   --fc-classic-foreground: #cbd5e1;
+  --fc-classic-highlight: #38bdf82e;
 }
 .chronos-event-card {
+  position: relative;
   height: 100%; width: 100%; min-height: 22px;
   border-left: 2px solid; border-radius: 4px;
   padding: 3px 6px; overflow: hidden;
   display: flex; flex-direction: column; justify-content: flex-start; gap: 3px;
   color: var(--event-text); background: var(--event-background);
 }
+.chronos-event-card[data-task="true"]::after {
+  content: '待办';
+  position: absolute; top: 2px; right: 3px;
+  border-radius: 4px; padding: 1px 3px;
+  background: var(--event-accent); color: #fff;
+  font-size: 9px; line-height: 1.25; opacity: 0.9;
+}
+.chronos-event-card[data-task="true"] .chronos-event-title { padding-right: 24px; }
 .chronos-event-card[data-timed="true"] { container-type: size; min-height: 0; }
 .chronos-event-title {
   font-size: 12px; font-weight: 500; line-height: 1.4; overflow: hidden;
@@ -41,7 +133,20 @@
 }
 .dark .chronos-event-card { color: #e2e8f0; }
 .chronos-event { border-radius: 5px; cursor: pointer; background: transparent !important; }
-.chronos-event:hover { filter: brightness(0.97); box-shadow: 0 2px 8px #0f172a12; }
+.chronos-event:hover { box-shadow: 0 4px 14px #0f172a1a; }
+.chronos-event-selected {
+  outline: 2px solid #0284c7; outline-offset: 2px;
+  box-shadow: 0 0 0 4px #0284c733, 0 6px 18px #0284c733;
+}
+.dark .chronos-event-selected {
+  outline-color: #38bdf8;
+  box-shadow: 0 0 0 4px #38bdf833, 0 6px 18px #38bdf833;
+}
+.chronos-event:focus-visible { outline: 2px solid #0284c7; outline-offset: 1px; }
+/* 放大日程底部的拉伸热区，触屏与鼠标都更容易抓住。 */
+.chronos-calendar-surface .chronos-event > div:last-child:not(:first-child) {
+  height: 14px; bottom: -7px; cursor: ns-resize;
+}
 .chronos-date-heading { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 9px 0 12px; }
 .chronos-weekday { font-size: 12px; font-weight: 500; color: #64748b; }
 .chronos-date-number { font-size: 20px; font-weight: 600; color: #475569; letter-spacing: -0.7px; }
@@ -62,9 +167,24 @@
   padding: 12px 18px; box-shadow: 0 6px 30px #0f172a15; font-size: 13px;
 }
 .dark .chronos-undo-bar { background: #1e293b; border-color: #334155; }
+.chronos-task-item--active { user-select: none; -webkit-user-select: none; }
+.chronos-task-sheet { animation: chronos-task-sheet-in 220ms cubic-bezier(0.22, 0.61, 0.36, 1); }
+@keyframes chronos-task-sheet-in {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chronos-task-sheet { animation: none; }
+}
 @media (max-width: 639px) {
   .chronos-date-number { font-size: 16px; }
   .chronos-date-heading { gap: 5px; padding: 8px 0 10px; }
   .chronos-event-card { padding: 3px 4px; }
   .chronos-undo-bar { left: 12px; transform: none; padding: 10px 12px; gap: 10px; }
+  .chronos-selection-hint {
+    left: 10px; right: 96px; bottom: 12px; transform: none; width: auto;
+    flex-wrap: wrap; gap: 6px; padding: 7px 8px 7px 10px;
+  }
+  .chronos-selection-hint > [role="status"] { flex: 1 1 100%; }
+  .chronos-selection-actions { margin-left: auto; }
 }

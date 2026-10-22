@@ -7,16 +7,18 @@
 ## 功能
 
 - 邮箱魔法链接（Magic Link）与邮箱 + 密码两种登录、注册、会话保持、退出、设置密码。
-- 中文年／月／周／日视图，默认周视图；响应式年历包含十二个月，切换时淡入；周一为一周开始；今天高亮、当前时间红线、上/下一段导航、跳转今天。
+- 中文年／月／周／日视图，默认周视图；响应式年历包含十二个月，视图切换左右滑动；周一为一周开始；今天高亮、当前时间红线、上/下一段导航、跳转今天。
 - 日程新增、编辑、软删除；全天事件、跨天/跨午夜事件；分类配色（浅底 + 深字 + 左侧色条）；备注；时间重叠分栏显示。
-- 周／日时间表支持 50%–200% 缩放：按钮、滑块、Ctrl+滚轮、触屏双指缩放；保持正在查看的时间位置并记住比例。年／月视图保留控件，分别调整月份排列和月历行高。拖拽与选择按 15 分钟对齐。
-- 时间表点击或拖动先选中时段，再点击选中区域创建日程；保存失败保留表单，点击编辑器外不关闭。用户主动保存本机草稿，从功能栏「日程草稿」选择修改与填入，普通新建不自动恢复。关闭未保存表单时可选择保存草稿、不保存或继续编辑；Ctrl+Enter 保存日程。
+- 周／日时间表支持 50%–200% 缩放：按钮、滑块、Ctrl+滚轮、触屏双指缩放；保持正在查看的时间位置并记住比例。年／月视图保留控件，分别调整月份排列和月历行高。拖选按 15 分钟对齐；第一次点击默认选中所在整点一小时。
+- 时间表第一次点击选中点击位置所在的整点一小时（x:00–x+1:00），拖选先选中时段，再点击选中区域创建日程；选区带蓝色高亮、描边和「新建日程」按钮，拖动选区上下的粗线可按 15 分钟调整开始／结束时间。保存失败保留表单，点击编辑器外不关闭。用户主动保存本机草稿，从功能栏「日程草稿」选择修改与填入，普通新建不自动恢复。关闭未保存表单时可选择保存草稿、不保存或继续编辑；Ctrl+Enter 保存日程。
+- **待办清单**：桌面端在左侧栏、移动端在底部抽屉维护待办；可新增、勾选、删除，直接拖到时间表生成 1 小时日程并自动完成；拖入月／年视图生成全天日程。真实账号同步到 Supabase `tasks` 表，演示模式保存在本机。
+- **待办日程联动**：待办生成的日程带「待办」标记和 `task_id` 关联；第一次点击选中（可拖动／拉伸），再次点击进入编辑。编辑器可「移回待办清单」，桌面端也可把日程直接拖回左侧待办栏；移回时删除日程并恢复待办。连续拖动使用最新版本号，避免误报跨设备冲突。
 - 系统提醒在单条日程中选择，默认关闭，可设开始时或提前 5／10／15／30 分钟；提醒设置按账号保存在当前设备，Windows 安装版负责通知。
 - 删除、移动、调整时长与编辑后可撤销，支持 Ctrl+Z，保留本次页面会话最近 20 步；遇到其他设备更新时提示冲突。
 - 细网格、蓝色日期强调与浅色日程块；周／日显示具体日期，标题最多两行，短日程优先显示标题，悬停查看完整时间、备注和类型。
 - 基础任务类型：课程、科研、会议、生活、任务、工作、运动、休息。新建日程可快捷选择，缺少的类型自动创建；设置中也可逐个添加。自定义类型及已有类型均可选 10 种主题色或自由取色，并预览配色；修改类型颜色会更新该类型的所有日程。
-- **桌面端**：可收起的左侧栏，含迷你月历导航与分类筛选；拖拽移动与拉伸时长（失败自动 `revert()` 回滚）。
-- **移动端**：以截图为准的紧凑布局 + 右下角悬浮「今天 / ＋」按钮；PWA 可安装为独立 App，含 iOS 安全区适配与桌面图标。
+- **桌面端**：可收起的左侧栏，含迷你月历导航、待办清单与分类筛选；拖拽移动、拉伸时长与拖入待办（失败自动 `revert()` 回滚）。
+- **移动端**：以截图为准的紧凑布局 + 右下角悬浮「今天 / ＋」按钮；功能栏「待办」打开不遮满屏的底部抽屉，长按待办可拖入上方时间表；开始／结束时间使用数字输入，不弹出原生时钟表盘；PWA 可安装为独立 App，含 iOS 安全区适配与桌面图标。
 - 基于可视区间查询（区间重叠，不漏跨界事件），不加载全量历史。
 - 乐观并发控制：`version` 条件更新，冲突时提示并刷新，绝不静默覆盖。
 - Realtime 订阅 + 浏览器焦点恢复 / 网络恢复兜底重取；登出清理订阅与缓存。
@@ -64,9 +66,14 @@ VITE_DEMO_SEED=true            # 可选：演示模式是否预置示例数据
 ## 配置 Supabase（从零到可同步）
 
 1. 在 [supabase.com](https://supabase.com) 新建项目。
-2. 在 SQL Editor 中执行迁移：
-   `supabase/migrations/202610080001_initial_schema.sql`
-   （或使用 CLI：`supabase db push`）。它会创建 `categories`、`events` 表、索引、触发器（自动维护 `version`/`updated_at`）、RLS 策略，并把两张表加入 `supabase_realtime` publication。
+2. 在 SQL Editor 中依次执行迁移：
+   `supabase/migrations/202610080001_initial_schema.sql`、
+   `supabase/migrations/202610190001_tasks.sql`、
+   `supabase/migrations/202610200001_task_event_link.sql`
+   （或使用 CLI：`supabase db push`）。它们会创建 `categories`、`events`、`tasks` 表、索引、触发器（自动维护 `version`/`updated_at`）、RLS 策略，并把表加入 `supabase_realtime` publication。
+   - 0.3.x 数据库：补执行 `202610190001_tasks.sql` 和 `202610200001_task_event_link.sql`。
+   - 已执行过待办迁移的 0.4.0 数据库：只需补执行 `202610200001_task_event_link.sql`（给 `events` 增加 `task_id` 关联）。
+   未执行待办迁移时，日程仍可正常使用，但待办面板会提示「待办表尚未创建」；执行迁移后点面板中的「重试」即可，无需重新登录。
 3. 复制 Project Settings → API 里的 **Project URL** 与 **anon publishable key** 到 `.env.local`。
 4. 配置认证邮箱：Authentication → Providers → Email 启用。并在 Authentication → URL Configuration → Redirect URLs 加入本地地址（默认 `http://localhost:1420`）与正式域名。
 5. 重启 `npm run dev`，使用邮箱 + 密码或邮箱链接登录，进入真实同步模式。
@@ -93,8 +100,9 @@ VITE_DEMO_SEED=true            # 可选：演示模式是否预置示例数据
 ## 数据与安全要点
 
 - **软删除**：删除是 `UPDATE events SET deleted_at = now()`，不是物理 `DELETE`；列表查询过滤 `deleted_at IS NULL`，Realtime 订阅不过滤它，以便收到删除通知。
+- **待办**：`tasks` 表同样按 `auth.uid() = user_id` 隔离；待办可直接物理删除。由待办排入的日程在 `events.task_id` 记录关联，拖回待办时软删除日程并把待办恢复为未完成。
 - **版本并发**：每次更新由触发器 `version = old.version + 1`；写入带 `id + user_id + version` 过滤，无返回行即冲突。
-- **RLS**：`categories`/`events` 只允许 `auth.uid() = user_id` 的读写；`anon` 无权限；事件无物理 `DELETE` 授权；复合外键阻止事件引用他人分类。
+- **RLS**：`categories`/`events`/`tasks` 只允许 `auth.uid() = user_id` 的读写；`anon` 无权限；事件无物理 `DELETE` 授权；复合外键阻止事件或待办引用他人分类。
 - **时区**：分时事件存 `timestamptz`，按浏览器本地时区显示；全天事件存 `DATE` 且 `end_date` 为 exclusive end。
 
 ## RLS 数据隔离测试
@@ -133,9 +141,11 @@ npm run desktop:build    # 生成安装包
 ```
 
 产物：`src-tauri/target/release/chronos-calendar.exe`（独立可运行）与
-`src-tauri/target/release/bundle/nsis/Chronos Calendar_0.3.1_x64-setup.exe`（安装包）。
+`src-tauri/target/release/bundle/nsis/Chronos Calendar_0.4.0_x64-setup.exe`（安装包）。
 
 桌面程序内嵌构建时的网页资源。修改源码或执行 `npm run build` 后，已经运行的 exe 不会自动更新；需要退出托盘中的旧程序，重新执行 `npm run desktop:build`，再启动新版 exe 或安装包。开发期间可用 `npm run desktop:dev` 查看实时更新。界面顶部显示版本号，便于核对当前程序。
+
+> 更新本地 exe 后如果界面仍显示旧版本，通常是托盘里还有旧进程：Tauri 单实例会唤起并聚焦已有窗口，而不会启动第二个程序。请从托盘菜单「退出」旧程序后再启动新 exe。
 
 桌面增强（已实现）：
 
@@ -181,7 +191,7 @@ npm run android:prepare     # 验证 APK 包名、版本和原签名，复制到
 
 - debug：`android/app/build/outputs/apk/debug/app-debug.apk`
 - release（已签名）：`android/app/build/outputs/apk/release/app-release.apk`
-- APK：`release/Chronos-Calendar_0.3.1_android.apk`，也可从 [v0.3.1 Release](https://github.com/dreamoon-2/chronos-calendar/releases/tag/v0.3.1) 下载。推送新版本 tag 时，Actions 同时构建 Windows 和 Android，两端检查通过后在同一 Release 上传安装包。Android 当前仍通过下载安装 APK 更新，未接入应用内自动安装。配置步骤见 [自动更新与双端发布](docs/AUTO_UPDATE.md)。
+- APK：`release/Chronos-Calendar_0.4.0_android.apk`，也可从 [v0.4.0 Release](https://github.com/dreamoon-2/chronos-calendar/releases/tag/v0.4.0) 下载。推送新版本 tag 时，Actions 同时构建 Windows 和 Android，两端检查通过后在同一 Release 上传安装包。Android 当前仍通过下载安装 APK 更新，未接入应用内自动安装。配置步骤见 [自动更新与双端发布](docs/AUTO_UPDATE.md)。
 
 > ⚠️ **国内网络注意**：`dl.google.com` / `maven.google.com` 直连被墙，本仓库已做如下适配：
 >
@@ -208,9 +218,11 @@ npm run android:prepare     # 验证 APK 包名、版本和原签名，复制到
 4. 恢复网络/切回前台：自动重新拉取并收敛。
 5. 两个设备同时修改同一日程：后保存的一端提示“该日程已在其他设备更新，请重新加载”，不覆盖。
 6. 另一账号（或退出登录后）看不到、也改不了这些数据。
+7. 电脑或手机新增待办 → 另一端出现；把待办拖到时间表 → 生成 1 小时日程且待办进入已完成。
 
 ## 已知限制
 
 - 首版不做：重复日程（RRULE）、全局搜索、导出 ICS、农历/节假日、离线可写、服务端提醒推送。
+- 待办目前固定按 1 小时排入日程，可在创建后编辑日程时长；待办标题创建后需删除重加。
 - 触屏拖拽为渐进增强；移动端优先编辑表单。
 - 未配置 Supabase 时只能验证界面与本地交互，无法验证真实跨端同步与 RLS。

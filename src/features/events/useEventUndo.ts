@@ -23,9 +23,15 @@ export function useEventUndo() {
     setLatest(entry)
   }, [])
 
-  const undo = useCallback(async () => {
+  /** 日程被移回待办后，旧的移动/编辑撤销记录已失效，必须丢弃。 */
+  const forget = useCallback((eventId: string) => {
+    entries.current = entries.current.filter((entry) => entry.before.id !== eventId)
+    setLatest(entries.current.at(-1) ?? null)
+  }, [])
+
+  const undo = useCallback(async (): Promise<EventRow | null> => {
     const entry = entries.current.at(-1)
-    if (!entry || !user || locked.current) return
+    if (!entry || !user || locked.current) return null
     locked.current = true
     setBusy(true)
     try {
@@ -36,12 +42,14 @@ export function useEventUndo() {
       if (previous) previous.version = restored.version
       setLatest(entries.current.at(-1) ?? null)
       toast.success(`已撤销${entry.label}`)
+      return restored
     } catch (error) {
       if (error instanceof ConflictError) {
         entries.current.pop()
         setLatest(entries.current.at(-1) ?? null)
         toast.error('日程已在其他设备更新，无法撤销这一步，已刷新')
       } else toast.error(toErrorMessage(error))
+      return null
     } finally {
       invalidate()
       locked.current = false
@@ -49,5 +57,5 @@ export function useEventUndo() {
     }
   }, [user, toast, invalidate])
 
-  return { latest, busy, remember, undo }
+  return { latest, busy, remember, forget, undo }
 }

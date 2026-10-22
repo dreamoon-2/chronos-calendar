@@ -11,6 +11,7 @@ export interface CalendarEvent extends EventInput {
     categoryId: string | null
     categoryColor: string
     categoryName: string | null
+    taskId: string | null
     version: number
     allDay: boolean
     raw: EventRow
@@ -39,6 +40,7 @@ export function toCalendarEvent(
       categoryId: row.category_id,
       categoryColor: accent,
       categoryName: category?.name ?? null,
+      taskId: row.task_id ?? null,
       version: row.version,
       allDay: row.all_day,
       raw: row,

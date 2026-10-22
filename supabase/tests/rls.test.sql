@@ -2,9 +2,9 @@
 --
 -- 目的：验证
 --   1) anon（未登录）无表权限，无法读取；
---   2) 用户 A 只能读/写自己的分类与事件；
+--   2) 用户 A 只能读/写自己的分类、事件与待办；
 --   3) 用户 B 无法读取、修改、删除 A 的数据；
---   4) 事件不能引用他人分类（复合外键隔离）。
+--   4) 事件和待办不能引用他人分类（复合外键隔离）。
 --
 -- 运行方式（需要本地 Supabase 环境；本仓库当前无凭证，未实际执行——见 README）：
 --   supabase db reset
@@ -43,6 +43,10 @@ insert into public.events (id, user_id, category_id, title, all_day, start_at, e
 values ('00000000-0000-0000-0000-0000000000d1', '00000000-0000-0000-0000-0000000000a1',
         '00000000-0000-0000-0000-0000000000c1', '机器学习', false, now(), now() + interval '1 hour');
 
+insert into public.tasks (id, user_id, category_id, title)
+values ('00000000-0000-0000-0000-0000000000e1', '00000000-0000-0000-0000-0000000000a1',
+        '00000000-0000-0000-0000-0000000000c1', '阅读论文');
+
 -- ---------------------------------------------------------------------------
 -- 1) Alice 能读自己的数据
 -- ---------------------------------------------------------------------------
@@ -54,6 +58,9 @@ begin
 
   select count(*) into n from public.events where id = '00000000-0000-0000-0000-0000000000d1';
   if n <> 1 then raise exception 'RLS FAIL: alice cannot read own event'; end if;
+
+  select count(*) into n from public.tasks where id = '00000000-0000-0000-0000-0000000000e1';
+  if n <> 1 then raise exception 'RLS FAIL: alice cannot read own task'; end if;
 end $$;
 
 -- ---------------------------------------------------------------------------
@@ -72,13 +79,22 @@ begin
   select count(*) into n from public.events where id = '00000000-0000-0000-0000-0000000000d1';
   if n <> 0 then raise exception 'RLS FAIL: bob can read alice event'; end if;
 
+  select count(*) into n from public.tasks where id = '00000000-0000-0000-0000-0000000000e1';
+  if n <> 0 then raise exception 'RLS FAIL: bob can read alice task'; end if;
+
   -- 更新：应影响 0 行
   update public.events set title = '被篡改' where id = '00000000-0000-0000-0000-0000000000d1';
   if found then raise exception 'RLS FAIL: bob can update alice event'; end if;
 
+  update public.tasks set title = '被篡改' where id = '00000000-0000-0000-0000-0000000000e1';
+  if found then raise exception 'RLS FAIL: bob can update alice task'; end if;
+
   -- 软删除：应影响 0 行
   update public.events set deleted_at = now() where id = '00000000-0000-0000-0000-0000000000d1';
   if found then raise exception 'RLS FAIL: bob can delete alice event'; end if;
+
+  delete from public.tasks where id = '00000000-0000-0000-0000-0000000000e1';
+  if found then raise exception 'RLS FAIL: bob can delete alice task'; end if;
 
   delete from public.categories where id = '00000000-0000-0000-0000-0000000000c1';
   if found then raise exception 'RLS FAIL: bob can delete alice category'; end if;
@@ -93,6 +109,10 @@ begin
   select count(*) into n from public.events
    where id = '00000000-0000-0000-0000-0000000000d1' and title = '机器学习' and deleted_at is null;
   if n <> 1 then raise exception 'RLS FAIL: alice data was mutated by bob'; end if;
+
+  select count(*) into n from public.tasks
+   where id = '00000000-0000-0000-0000-0000000000e1' and title = '阅读论文';
+  if n <> 1 then raise exception 'RLS FAIL: alice task was mutated by bob'; end if;
 end $$;
 
 -- ---------------------------------------------------------------------------
@@ -106,17 +126,32 @@ values ('00000000-0000-0000-0000-0000000000c2', '00000000-0000-0000-0000-0000000
 
 -- 以 Alice 身份尝试引用 Bob 的分类 → 必须失败
 do $$
+declare inserted boolean;
 begin
   perform set_config('request.jwt.claims',
     '{"sub":"00000000-0000-0000-0000-0000000000a1","role":"authenticated"}', true);
+
+  inserted := false;
   begin
     insert into public.events (id, user_id, category_id, title, all_day, start_at, end_at)
     values ('00000000-0000-0000-0000-0000000000d4', '00000000-0000-0000-0000-0000000000a1',
             '00000000-0000-0000-0000-0000000000c2', '越权分类', false, now(), now() + interval '1 hour');
-    raise exception 'FK FAIL: alice referenced bob category';
-  exception when others then
-    null; -- 预期：复合外键 (category_id, user_id) 拒绝，插入失败即通过
+    inserted := true;
+  exception when foreign_key_violation then
+    null; -- 预期：复合外键 (category_id, user_id) 拒绝
   end;
+  if inserted then raise exception 'FK FAIL: alice referenced bob category'; end if;
+
+  inserted := false;
+  begin
+    insert into public.tasks (id, user_id, category_id, title)
+    values ('00000000-0000-0000-0000-0000000000e4', '00000000-0000-0000-0000-0000000000a1',
+            '00000000-0000-0000-0000-0000000000c2', '越权待办');
+    inserted := true;
+  exception when foreign_key_violation then
+    null;
+  end;
+  if inserted then raise exception 'FK FAIL: alice task referenced bob category'; end if;
 end $$;
 
 -- ---------------------------------------------------------------------------
@@ -130,6 +165,12 @@ begin
     raise exception 'RLS FAIL: anon can read categories';
   exception when insufficient_privilege or undefined_table then
     null; -- 预期：无权限
+  end;
+  begin
+    perform 1 from public.tasks limit 1;
+    raise exception 'RLS FAIL: anon can read tasks';
+  exception when insufficient_privilege or undefined_table then
+    null;
   end;
 end $$;
 

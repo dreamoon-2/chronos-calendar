@@ -21,6 +21,10 @@ const range = { start: new Date(2030, 0, 1), end: new Date(2030, 0, 8) }
 describe('demoBackend', () => {
   beforeEach(() => {
     localStorage.clear()
+    localStorage.setItem(
+      'chronos.demo.v1',
+      JSON.stringify({ categories: [], events: [], tasks: [] }),
+    )
   })
 
   it('soft delete removes the event from range queries', () => {
@@ -43,5 +47,42 @@ describe('demoBackend', () => {
     const updated = demoBackend.updateEvent(created.id, created.version, { title: '新标题' })
     expect(updated.version).toBe(created.version + 1)
     expect(updated.title).toBe('新标题')
+  })
+
+  it('creates, completes, lists and deletes tasks', () => {
+    const task = demoBackend.createTask({ title: '整理周报' })
+    expect(task.done).toBe(false)
+    expect(task.estimated_minutes).toBe(60)
+    expect(demoBackend.listTasks().map((item) => item.title)).toEqual(['整理周报'])
+
+    const completed = demoBackend.updateTask(task.id, { done: true })
+    expect(completed.done).toBe(true)
+    expect(demoBackend.listTasks()[0].done).toBe(true)
+
+    demoBackend.deleteTask(task.id)
+    expect(demoBackend.listTasks()).toHaveLength(0)
+  })
+
+  it('keeps active tasks before completed tasks', () => {
+    const first = demoBackend.createTask({ title: '第一条' })
+    demoBackend.createTask({ title: '第二条' })
+    demoBackend.updateTask(first.id, { done: true })
+    expect(demoBackend.listTasks().map((item) => item.title)).toEqual(['第二条', '第一条'])
+  })
+
+  it('stores task_id on events created from a task', () => {
+    const task = demoBackend.createTask({ title: '写周报' })
+    const event = demoBackend.createEvent({ ...timedInsert('写周报'), task_id: task.id })
+    expect(event.task_id).toBe(task.id)
+    expect(demoBackend.listEvents(range).find((row) => row.id === event.id)?.task_id).toBe(task.id)
+  })
+
+  it('reads old demo state without a tasks field', () => {
+    localStorage.setItem(
+      'chronos.demo.v1',
+      JSON.stringify({ categories: [], events: [] }),
+    )
+    expect(demoBackend.listTasks()).toEqual([])
+    expect(demoBackend.createTask({ title: '兼容旧数据' }).title).toBe('兼容旧数据')
   })
 })

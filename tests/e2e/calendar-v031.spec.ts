@@ -8,6 +8,33 @@ async function clickTime(page: Page, time: string, offset = 5) {
   else await page.mouse.click(x, y)
 }
 
+/** 记录日历主动发起的滑动动画，避免依赖「恰好仍在播放」的时序。 */
+async function recordSlideAnimations(page: Page) {
+  await page.evaluate(() => {
+    const w = window as Window & { __chronosSlideAnimations?: { transform: string[] }[] }
+    w.__chronosSlideAnimations = []
+    const original = Element.prototype.animate
+    Element.prototype.animate = function (
+      keyframes: Keyframe[] | PropertyIndexedKeyframes | null,
+      options?: number | KeyframeAnimationOptions,
+    ) {
+      if (Array.isArray(keyframes)) {
+        w.__chronosSlideAnimations!.push({
+          transform: keyframes.map((frame) => String((frame as Keyframe).transform ?? '')),
+        })
+      }
+      return original.call(this, keyframes, options)
+    }
+  })
+}
+
+async function slideAnimationCount(page: Page): Promise<number> {
+  return page.evaluate(() => {
+    const w = window as Window & { __chronosSlideAnimations?: unknown[] }
+    return w.__chronosSlideAnimations?.length ?? 0
+  })
+}
+
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
     if (!localStorage.getItem('chronos.demo.v1')) localStorage.setItem('chronos.demo.v1', JSON.stringify({ categories: [], events: [] }))
@@ -88,8 +115,14 @@ test('月视图先选日期再创建全天日程，Esc 取消选区', async ({ p
 })
 
 test('年视图日期支持两步创建，动画尊重系统减少动态效果设置', async ({ page }) => {
+  await recordSlideAnimations(page)
   await page.getByRole('button', { name: '年', exact: true }).click()
-  await expect.poll(() => page.locator('.chronos-calendar-surface').evaluate(el => el.getAnimations().some(a => a.playState === 'running'))).toBe(true)
+  await expect.poll(() => slideAnimationCount(page)).toBeGreaterThan(0)
+  const slide = await page.evaluate(() => {
+    const w = window as Window & { __chronosSlideAnimations?: { transform: string[] }[] }
+    return w.__chronosSlideAnimations!.at(-1)!
+  })
+  expect(slide.transform.join(' ')).toContain('translateX')
   const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Shanghai' })
   const cell = page.locator(`.chronos-year-month [role="gridcell"][data-date="${today}"]`)
   await cell.click({ position: { x: 10, y: 25 } })
@@ -100,9 +133,11 @@ test('年视图日期支持两步创建，动画尊重系统减少动态效果�
   await expect(page.locator('#ev-sd')).toHaveValue(today)
   await page.getByRole('button', { name: '关闭', exact: true }).click()
   await page.emulateMedia({ reducedMotion: 'reduce' })
+  const beforeReduced = await slideAnimationCount(page)
   await page.getByRole('button', { name: '月', exact: true }).click()
   await expect(page.getByRole('button', { name: '月', exact: true })).toHaveAttribute('aria-pressed', 'true')
-  await expect.poll(() => page.locator('.chronos-calendar-surface').evaluate(el => el.getAnimations().some(a => a.playState === 'running'))).toBe(false)
+  await page.waitForTimeout(400)
+  expect(await slideAnimationCount(page)).toBe(beforeReduced)
 })
 
 test('每条日程独立选择提醒，新建默认不提醒，编辑和刷新保持选择', async ({ page }) => {

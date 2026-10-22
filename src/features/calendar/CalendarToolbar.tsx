@@ -13,6 +13,8 @@ interface CalendarToolbarProps {
   onChangeView: (view: string) => void
   onCreate: () => void
   onOpenDrafts: () => void
+  onOpenTasks: () => void
+  taskCount: number
   sidebarOpen?: boolean
   onToggleSidebar?: () => void
 }
@@ -35,6 +37,8 @@ export function CalendarToolbar({
   onChangeView,
   onCreate,
   onOpenDrafts,
+  onOpenTasks,
+  taskCount,
   sidebarOpen = true,
   onToggleSidebar,
 }: CalendarToolbarProps) {
@@ -147,6 +151,15 @@ export function CalendarToolbar({
           </div>
 
         <Button variant="secondary" onClick={onOpenDrafts} className="px-3 py-1.5 text-xs">日程草稿</Button>
+        <Button
+          variant="secondary"
+          onClick={onOpenTasks}
+          aria-label="打开待办清单"
+          title={taskCount > 0 ? `打开待办清单（${taskCount} 项待办）` : '打开待办清单'}
+          className="px-3 py-1.5 text-xs md:hidden"
+        >
+          待办
+        </Button>
         <Button onClick={onCreate} className="hidden px-3 py-1.5 sm:inline-flex">
           ＋ 添加日程
         </Button>

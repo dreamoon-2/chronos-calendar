@@ -2,6 +2,7 @@ import { useEffect, useState, type MutableRefObject } from 'react'
 import type { CategoryRow, EventRow } from '../../types/database'
 import { Button } from '../../components/ui/Button'
 import { Modal } from '../../components/ui/Modal'
+import { TimeInput } from '../../components/ui/TimeInput'
 import { useToast } from '../../components/ui/Toast'
 import { ConflictError, toErrorMessage } from '../../utils/errors'
 import { eventPalette, FALLBACK_COLOR } from '../../utils/colors'
@@ -34,6 +35,7 @@ interface EventEditorProps {
   draftId?: string
   closeRef?: MutableRefObject<(() => void) | null>
   onChanged: (before: EventRow, after: EventRow, label: string) => void
+  onUnschedule?: (event: EventRow) => Promise<void>
   onClose: () => void
 }
 
@@ -54,6 +56,7 @@ export function EventEditor({
   draftId: initialDraftId,
   closeRef,
   onChanged,
+  onUnschedule,
   onClose,
 }: EventEditorProps) {
   const toast = useToast()
@@ -75,6 +78,7 @@ export function EventEditor({
   const [errors, setErrors] = useState<EventFormErrors>({})
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [unscheduling, setUnscheduling] = useState(false)
 
   const set = <K extends keyof EventFormValues>(k: K, v: EventFormValues[K]) =>
     setValues((p) => ({ ...p, [k]: v, ...(k === 'startDate' && p.endDate === p.startDate ? { endDate: v as string } : {}) }))
@@ -103,7 +107,7 @@ export function EventEditor({
     return () => { closeRef.current = null }
   })
 
-  const busy = saving || createM.isPending || updateM.isPending || deleteM.isPending || createCategoryM.isPending
+  const busy = saving || unscheduling || createM.isPending || updateM.isPending || deleteM.isPending || createCategoryM.isPending
   const selectedCategory = categories.find((category) => category.id === values.categoryId)
   const palette = eventPalette(selectedCategory?.color ?? FALLBACK_COLOR)
 
@@ -176,6 +180,19 @@ export function EventEditor({
       } else {
         toast.error(toErrorMessage(err))
       }
+    }
+  }
+
+  const onUnscheduleClick = async () => {
+    if (!original || !onUnschedule || unscheduling) return
+    setUnscheduling(true)
+    try {
+      await onUnschedule(original)
+      onClose()
+    } catch {
+      // 父级已提示失败原因，保留编辑器。
+    } finally {
+      setUnscheduling(false)
     }
   }
 
@@ -274,24 +291,22 @@ export function EventEditor({
               <label className={labelCls} htmlFor="ev-st">
                 开始时间
               </label>
-              <input
+              <TimeInput
                 id="ev-st"
-                type="time"
                 className={inputCls}
                 value={values.startTime}
-                onChange={(e) => set('startTime', e.target.value)}
+                onChange={(value) => set('startTime', value)}
               />
             </div>
             <div>
               <label className={labelCls} htmlFor="ev-et">
                 结束时间
               </label>
-              <input
+              <TimeInput
                 id="ev-et"
-                type="time"
                 className={inputCls}
                 value={values.endTime}
-                onChange={(e) => set('endTime', e.target.value)}
+                onChange={(value) => set('endTime', value)}
               />
               {errors.endTime && (
                 <p className="col-span-2 text-xs text-red-600 dark:text-red-400">
@@ -375,6 +390,22 @@ export function EventEditor({
           />
           </div>
         </div>
+
+        {mode === 'edit' && original?.task_id && onUnschedule && (
+          <div className="space-y-2 rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm text-sky-900 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-100">
+            <p className="text-xs leading-relaxed">
+              此日程由待办「{original.title}」排入时间表。移回待办会删除此日程，并把原待办恢复为未完成。
+            </p>
+            <Button
+              variant="secondary"
+              type="button"
+              disabled={busy}
+              onClick={() => void onUnscheduleClick()}
+            >
+              {unscheduling ? '移回中…' : '移回待办清单'}
+            </Button>
+          </div>
+        )}
 
         <div className="flex items-center gap-3 pt-1">
           <Button

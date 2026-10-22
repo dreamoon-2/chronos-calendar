@@ -1,6 +1,6 @@
 # Chronos Calendar：项目结构与功能说明
 
-更新日期：2026-10-10。当前版本：0.3.1。
+更新日期：2026-10-19。当前版本：0.4.0。
 
 这是一个已实现的个人日程应用。网页、Windows 桌面程序和 Android 应用共用 `src/` 下的 React 前端；配置 Supabase 后，通过账号同步日程。未配置凭证时，使用明确标注的本地演示模式。
 
@@ -12,7 +12,9 @@
 | 了解日历页面如何组合 | [CalendarPage.tsx](../src/features/calendar/CalendarPage.tsx) |
 | 修改时间表布局、拖拽与时间格 | [CalendarGrid.tsx](../src/features/calendar/CalendarGrid.tsx) |
 | 修改缩放按钮和范围 | [CalendarToolbar.tsx](../src/features/calendar/CalendarToolbar.tsx)、[useCalendarZoom.ts](../src/features/calendar/useCalendarZoom.ts) |
-| 修改新建／编辑任务表单 | [EventEditor.tsx](../src/features/events/EventEditor.tsx) |
+| 修改新建／编辑任务表单 | [EventEditor.tsx](../src/features/events/EventEditor.tsx)、[TimeInput.tsx](../src/components/ui/TimeInput.tsx) |
+| 修改待办清单与拖入日历 | [TaskPanel.tsx](../src/features/tasks/TaskPanel.tsx)、[useTaskDraggable.ts](../src/features/tasks/useTaskDraggable.ts) |
+| 修改选区高亮 | [SelectionOverlay.tsx](../src/features/calendar/SelectionOverlay.tsx)、[useCalendarSelection.ts](../src/features/calendar/useCalendarSelection.ts) |
 | 修改草稿与撤销 | [eventDrafts.ts](../src/features/events/eventDrafts.ts)、[useEventUndo.ts](../src/features/events/useEventUndo.ts) |
 | 修改手势缩放与时间定位 | [useCalendarGestures.ts](../src/features/calendar/useCalendarGestures.ts) |
 | 修改桌面启动与提醒 | [DesktopSettings.tsx](../src/features/desktop/DesktopSettings.tsx)、[reminders.rs](../src-tauri/src/reminders.rs) |
@@ -20,7 +22,7 @@
 | 修改基础任务类型 | [categoryPresets.ts](../src/features/categories/categoryPresets.ts) |
 | 修改主题色和颜色计算 | [colors.ts](../src/utils/colors.ts)、[ColorPicker.tsx](../src/components/ui/ColorPicker.tsx) |
 | 修改设置界面 | [SettingsPage.tsx](../src/features/settings/SettingsPage.tsx) |
-| 查看数据库定义与权限 | [数据库迁移](../supabase/migrations/202610080001_initial_schema.sql) |
+| 查看数据库定义与权限 | [数据库迁移](../supabase/migrations/202610080001_initial_schema.sql)、[待办迁移](../supabase/migrations/202610190001_tasks.sql)、[待办关联迁移](../supabase/migrations/202610200001_task_event_link.sql) |
 | 查看项目进度与待办 | [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md) |
 
 ## 2. 总体目录
@@ -47,13 +49,14 @@ chronos_calendar_blueprint/
 │   │   ├── auth/                   # 登录、注册、会话与密码
 │   │   ├── calendar/               # 日历页面、时间表、缩放与筛选
 │   │   ├── events/                 # 日程表单、校验、增删改查与同步
+│   │   ├── tasks/                  # 待办清单、数据操作与拖入日历
 │   │   ├── categories/             # 任务类型预设与类型数据操作
 │   │   ├── desktop/                # Windows 开机启动、通知设置与提醒计划
 │   │   ├── updates/                # 桌面启动检查、下载进度与安装更新
 │   │   └── settings/               # 类型管理与账号设置
 │   ├── components/                 # 可复用界面组件
 │   │   ├── layout/                 # 应用外壳与顶栏
-│   │   └── ui/                     # 按钮、弹窗、提示、取色器
+│   │   └── ui/                     # 按钮、弹窗、提示、取色器、数字时间输入
 │   ├── hooks/                      # 跨功能复用的 React Hook
 │   ├── services/                   # Supabase 客户端与演示后端
 │   ├── platform/                   # Web／Tauri／Capacitor 平台检测
@@ -67,11 +70,12 @@ chronos_calendar_blueprint/
 │   ├── unit/
 │   │   ├── features/events/        # 表单校验和日程映射测试
 │   │   ├── features/desktop/       # 提醒时间、全天与过期日程测试
+│   │   ├── components/             # 数字时间输入等公共组件测试
 │   │   ├── services/               # 演示后端测试
 │   │   └── utils/                  # 日期边界与区间测试
 │   └── e2e/                        # 桌面／手机浏览器交互测试
 ├── supabase/                      # 云端数据库工程
-│   ├── migrations/                # 表、索引、触发器、RLS 与 Realtime
+│   ├── migrations/                # 表、索引、触发器、RLS 与 Realtime（含 tasks）
 │   └── tests/                     # 数据权限隔离 SQL 测试
 ├── src-tauri/                     # Windows 原生工程
 │   ├── src/                        # Rust 入口、托盘、窗口与原生提醒线程
@@ -117,6 +121,7 @@ chronos_calendar_blueprint/
 | `src/app/` | `theme.tsx` | 深浅色切换、本机记忆与 FullCalendar 主题属性 |
 | `src/components/layout/` | `AppShell.tsx`、`Header.tsx` | 页面布局、顶栏版本号、侧栏区域、离线／演示提示、移动端浮动按钮 |
 | `src/components/ui/` | `Button.tsx`、`Modal.tsx`、`Toast.tsx` | 通用按钮、桌面弹窗／手机抽屉、操作结果提示 |
+| `src/components/ui/` | `TimeInput.tsx` | 桌面／手机统一的数字时间输入：支持 `HH:mm` 与 `0930`，不触发原生时钟表盘 |
 | `src/components/ui/` | `ColorPicker.tsx` | 主题色板、自定义取色、当前色值和配色预览 |
 
 ### 业务功能
@@ -126,14 +131,18 @@ chronos_calendar_blueprint/
 | `features/auth/` | `LoginPage.tsx` | 邮箱密码登录／注册、邮件链接登录与原生平台提示 |
 | `features/auth/` | `AuthProvider.tsx`、`authService.ts` | 会话获取与监听、退出、密码修改、认证错误中文化 |
 | `features/calendar/` | `CalendarPage.tsx` | 组合日历、侧栏、日程弹窗与设置；处理点击、选择、拖拽、拉伸及失败回滚 |
-| `features/calendar/` | `CalendarGrid.tsx` | FullCalendar 年／月／周／日视图、淡入切换、全天栏、当前时间线和 15 分钟拖拽对齐 |
-| `features/calendar/` | `CalendarToolbar.tsx` | 日期导航、视图切换、添加日程与缩放控件 |
+| `features/calendar/` | `CalendarGrid.tsx` | FullCalendar 年／月／周／日视图、左右滑动切换、全天栏、当前时间线和 15 分钟拖拽对齐 |
+| `features/calendar/` | `SelectionOverlay.tsx` | 用真实时间格坐标绘制明显的选区边框，上下粗线可拖动调整开始／结束时间 |
+| `features/calendar/` | `CalendarToolbar.tsx` | 日期导航、视图切换、添加日程、待办入口与缩放控件 |
 | `features/calendar/` | `CalendarEventCard.tsx` | 标题优先、最多两行，短日程隐藏时间，悬停完整信息和任务类型色条 |
-| `features/calendar/` | `Sidebar.tsx` | 桌面迷你月历、跳转日期、任务类型筛选 |
+| `features/calendar/` | `Sidebar.tsx` | 桌面迷你月历、跳转日期、待办清单插槽与任务类型筛选 |
 | `features/calendar/` | `useCalendarRange.ts` | 维护当前可视日期范围、视图、标题与定位日期 |
 | `features/calendar/` | `useCalendarZoom.ts` | 50%–200% 时间轴缩放，25% 步长、重置与本机记忆 |
 | `features/calendar/` | `useCalendarGestures.ts` | Ctrl+滚轮／双指缩放、保留时间锚点、抑制手势误点击 |
-| `features/calendar/` | `useCalendarSelection.ts` | 点击／拖选先选中、再次点击确认创建；导航、切换视图、Esc 清选 |
+| `features/calendar/` | `useCalendarSelection.ts` | 第一次点击按整点选中一小时、拖选先选中、再次点击确认创建；上下粗线拖动时更新范围并同步原生高亮 |
+| `features/tasks/` | `TaskPanel.tsx`、`TaskSheet.tsx` | 桌面侧栏／移动端抽屉的待办清单，新增、完成、删除与拖拽入口；也是日程拖回的放置区 |
+| `features/tasks/` | `useTaskDraggable.ts` | 将待办列表接入 FullCalendar 外部拖拽，落入时间表时生成事件 |
+| `features/tasks/` | `tasksApi.ts`、`taskQueries.ts` | Supabase／演示后端的待办 CRUD、缓存刷新，以及把待办日程移回清单的联动更新 |
 | `features/events/` | `EventEditor.tsx`、`EventDetails.tsx` | 简洁表单、失败保留、关闭保存选择、逐条提醒、跨天与备注展开 |
 | `features/events/` | `eventDrafts.ts`、`EventDraftList.tsx` | 按账号保存多份草稿、兼容旧草稿、列表选择修改与填入；普通新建不自动恢复 |
 | `features/events/` | `useEventUndo.ts` | 最近 20 步撤销，恢复软删除和修改前数据，处理连续撤销版本及冲突 |
@@ -179,6 +188,12 @@ chronos_calendar_blueprint/
 
 云端变化通过 Realtime 触发重新查询；拖拽与拉伸直接调用事件 API，并在失败时撤销界面上的移动。编辑与删除带上 `version`，避免静默覆盖其他设备的新修改。
 
+待办由 `TaskPanel` 读取 `tasks`，新增／勾选／删除后刷新缓存。拖拽使用 FullCalendar 的 `Draggable` 与 `eventReceive`：松手时先移除日历临时事件，再由 `CalendarPage` 创建带 `task_id` 的正式日程并调用 `updateTask` 把待办标记完成；拖入月／年视图时创建全天日程。移动端抽屉不铺满屏幕，长按待办后可以继续拖到上方时间表。
+
+待办日程第一次点击只选中，第二次进入编辑；拖动开始也会选中，并显示蓝色描边。编辑器的「移回待办清单」或桌面拖回左侧待办栏会调用 `useUnscheduleTaskEvent`：软删除日程并把待办恢复为未完成。连续拖动以 `latestVersions` 记录最新版本，成功写入后同步更新 FullCalendar 事件的 `version`／`raw` 扩展属性，避免短时间多次拖动使用旧版本而误报冲突。
+
+第一次点击时间表时，`useCalendarSelection` 用 `startOfHour` 把起点对齐到整点并把终点设为 +1 小时；拖选仍由 FullCalendar 按 15 分钟吸附。`SelectionOverlay` 用 `data-date` / `data-time` 读取时间格坐标，在选区上绘制描边；上下两条粗线的拖动由 `SelectionOverlay` 换算成时间，经 `setRange` 更新选区并通过 `api.select` 同步原生高亮。底部提示提供「新建日程」按钮。
+
 编辑器只在用户主动点击「保存草稿」或关闭时选择保存后写入本机草稿库。新建／编辑不自动填入旧草稿，从功能栏「日程草稿」手动选择后可修改并创建新日程，成功后移除对应草稿；旧草稿不会覆盖现有日程。成功修改／删除记录到撤销栈，撤销通过相同版本条件恢复原记录，不创建重复日程。系统提醒按单条日程在当前设备选择，无需数据库迁移。
 
 桌面提醒计划由前端查询近期日程生成，Rust `reminders.rs` 每 10 秒检查到期项；通知成功后记录去重键。窗口隐藏到托盘仍运行原生线程；退出后停止。开机启动通过 Tauri 插件注册当前安装程序，并传入 `--autostart` 隐藏启动。
@@ -189,8 +204,8 @@ chronos_calendar_blueprint/
 
 | 内容 | 保存位置 | 是否跨设备 |
 | --- | --- | --- |
-| 真实账号的日程与类型 | Supabase 的 `events`、`categories` 表 | 同账号联网时同步 |
-| 演示日程与类型 | `localStorage`，键 `chronos.demo.v1` | 否 |
+| 真实账号的日程、类型与待办 | Supabase 的 `events`、`categories`、`tasks` 表 | 同账号联网时同步 |
+| 演示日程、类型与待办 | `localStorage`，键 `chronos.demo.v1` | 否 |
 | 深浅色偏好 | `localStorage`，键 `chronos.theme` | 否 |
 | 时间轴缩放比例 | `localStorage`，键 `chronos.calendar.zoom` | 否 |
 | 主动保存的草稿 | `localStorage`，键 `chronos.drafts.<账号>`；旧 `chronos.draft.*` 兼容读取 | 否，可在草稿列表删除或填入后提交 |
@@ -222,7 +237,7 @@ chronos_calendar_blueprint/
 | `npm run build` | 网页生产构建到 `dist/`，生成 PWA 资源 |
 | `npm run desktop:build` | 重新构建前端并生成 Windows exe、签名 NSIS 安装包与 `.sig` |
 | `npm run updater:setup` | 配置更新签名公钥，要求保留原发布私钥 |
-| `npm run release:version -- 0.3.1` | 同步前端、Tauri、Cargo、Android 版本 |
+| `npm run release:version -- 0.4.0` | 同步前端、Tauri、Cargo、Android 版本 |
 | `npm run release:verify` | 检查实际安装包签名、版本及篡改拒绝 |
 | `npm run release:prepare` | 生成 `release/` 中待上传的安装包、签名、更新清单和说明 |
 | `npm run android:prepare` | 验证 APK 实际包名、版本和原证书，复制为版本化发布文件 |
@@ -241,12 +256,14 @@ Windows 本机重新打包后需从托盘退出旧程序，再运行新版 exe �
 - `tests/unit/features/events/undo.test.tsx`：删除恢复、连续撤销与版本冲突。
 - `tests/unit/features/desktop/reminders.test.ts`：提前量、全天 09:00、过期过滤和通知去重键。
 - `tests/unit/features/updates/`：启动检查、检查接口、网络错误、失败重试、下载进度、重复操作与编辑器保护。
-- `tests/unit/services/demoBackend.test.ts`：软删除、版本冲突和成功更新。
+- `tests/unit/components/TimeInput.test.tsx`：数字时间输入、`HH:mm` 与四位数字失焦归一化、非法值恢复。
+- `tests/unit/services/demoBackend.test.ts`：软删除、版本冲突、成功更新与待办 CRUD／排序／旧数据兼容。
 - `tests/unit/utils/dates.test.ts`：全天日期、时区边界和区间重叠。
 - `tests/e2e/calendar.spec.ts`：应用加载、演示模式创建、可选真实登录创建。
 - `tests/e2e/calendar-improvements.spec.ts`：缩放、类型快捷选择、主题色更新与自由取色。
 - `tests/e2e/calendar-experience.spec.ts`：草稿、防误关闭、撤销、拖拽／拉伸、日期、月历缩放、Ctrl+滚轮与真实双指事件。
-- `tests/e2e/calendar-v031.spec.ts`：点击／拖选／轻触的两步创建、年／月日期与放大后命中、年历及淡入动画、减少动态效果、逐条提醒持久化。
+- `tests/e2e/calendar-v031.spec.ts`：点击／拖选／轻触的两步创建、年／月日期与放大后命中、年历及滑动动画、减少动态效果、逐条提醒持久化。
+- `tests/e2e/calendar-v040.spec.ts`：整点一小时选区和明显高亮、上下粗线拖动调时、数字时间输入、左右滑动、待办拖入时间表、待办日程两步选中／编辑、连续拖动版本、拖回待办与编辑器移回。
 - `supabase/tests/rls.test.sql`：数据库账号隔离；需另外在测试数据库中执行。
 
 Playwright 覆盖桌面 Chrome 和手机尺寸 Chrome。可用 `E2E_BASE_URL` 指向其他端口；真实登录用例需要 `E2E_EMAIL`、`E2E_PASSWORD`。浏览器测试不等同于已验证 Windows 或 Android 的全部原生行为。
@@ -259,7 +276,7 @@ Playwright 覆盖桌面 Chrome 和手机尺寸 Chrome。可用 `E2E_BASE_URL` �
 | `dist/` | 网页或原生容器使用的前端构建结果 | 通过对应构建命令重新生成 |
 | `src-tauri/target/` | Rust 编译缓存与 Windows 产物 | 通过 Tauri 构建生成 |
 | `src-tauri/target/release/chronos-calendar.exe` | 当前 Windows 独立程序 | 退出旧进程后启动新版 |
-| `src-tauri/target/release/bundle/nsis/` | Windows 安装包 | 当前本地版本文件名为 `Chronos Calendar_0.3.1_x64-setup.exe` |
+| `src-tauri/target/release/bundle/nsis/` | Windows 安装包 | 当前本地版本文件名为 `Chronos Calendar_0.4.0_x64-setup.exe` |
 | `android/app/src/main/assets/public/` | 从 `dist/` 复制的网页资源 | 通过 `mobile:sync` 更新，不手改 |
 | `release/Chronos-Calendar_<版本>_android.apk` | 验签后的 Android 发布附件 | 与 Windows 安装包一起上传同一正式 Release |
 | `android/app/build/outputs/apk/` | Android debug／release APK | 通过 Gradle 构建生成 |

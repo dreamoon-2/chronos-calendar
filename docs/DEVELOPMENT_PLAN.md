@@ -4,6 +4,24 @@
 
 当前目录和功能入口见 [项目结构说明](PROJECT_STRUCTURE.md)，文档导航见 [README](README.md)。原始规格中的目录树保留为早期设计记录。
 
+## v0.4.0 — 2026-10-19
+
+- 第一次点击时间表改为选中点击位置所在整点一小时（x:00–x+1:00）；新增 `SelectionOverlay` 按真实时间格坐标绘制蓝色描边，底部提示提供「新建日程」与「取消」。选区上下新增可拖动粗线，按 15 分钟调整开始／结束时间。
+- 扩大日程底部拉伸热区，鼠标拖动距离降到 2px，触屏长按缩短到 250ms；拖选仍按 15 分钟对齐。
+- 新增待办清单：桌面侧栏、移动端底部抽屉；新增／勾选／删除；拖入时间表生成 1 小时日程并标记完成；月／年视图拖放生成全天日程。
+- 待办日程通过 `events.task_id` 关联（新迁移 `202610200001_task_event_link.sql`），卡片显示「待办」标记。第一次点击选中并可拖动／拉伸，再次点击进入编辑；拖动开始也会选中并显示描边。
+- 增加「移回待办清单」：编辑器按钮与桌面拖回左侧待办栏；手机在拖动时显示底部放置区。移回会软删除日程并恢复待办；同时清除该日程的旧撤销记录与旧提示，避免两条提示叠加。
+- 修复连续拖动／拉伸使用旧 `version` 导致误报「该日程已在其他设备更新」并无法编辑的问题；`latestRows` 以服务端最新整行为准，编辑保存后立即同步，拖动成功后回写 FullCalendar 事件属性，冲突时清缓存并重新拉取。
+- 新增 Supabase `tasks` 表迁移、RLS、Realtime 与演示后端；旧演示数据缺少 `tasks` 时自动按空列表兼容。
+- 本机真实账号实测发现 `public.tasks` 未创建（PostgREST `PGRST205`）；已把该错误翻译为明确的迁移提示，并在待办面板提供「执行迁移后重试」按钮。真实项目仍需在 SQL Editor 执行迁移文件。
+- 移动端开始／结束时间改为数字文本框（`0930` → `09:30`），不再弹出原生时钟表盘。
+- 视图切换、上／下一段和登录 ↔ 日历改为左右滑动；不再使用淡入淡出，并遵循系统减少动态效果偏好。
+- 修复刚完成拖拽／拉伸时 Ctrl+Z 因撤销状态尚未提交而偶尔失效的时序问题。
+- 验证：类型检查、ESLint、55 项单元测试、45 项桌面／移动浏览器测试通过；11 项按平台或真实账号条件跳过；生产网页构建通过。
+- Windows release 与 NSIS 签名打包通过，Minisign 验签通过；Android release APK 0.4.0（versionCode 5）验签通过，包名与原签名证书一致。产物：`release/Chronos-Calendar_0.4.0_x64-setup.exe`、`release/Chronos-Calendar_0.4.0_android.apk`、`release/latest.json`。
+- 本机验证新 exe 时曾仍显示 0.3.1：原因是旧的托盘进程仍在运行，Tauri 单实例聚焦了旧窗口；退出旧进程后重启，UI Automation 读取顶栏为 `v0.4.0`。已在 README 与体验指南补充排查说明。
+- 尚待真实环境验证：Supabase 线上库执行 `202610190001_tasks.sql` 与 `202610200001_task_event_link.sql` 后的待办同步、日程拖回与 RLS；Android 真机待办长按拖拽、数字键盘与通知体验仍需手动验收。
+
 ## v0.3.1 — 2026-10-10
 
 - 完成点击／拖选先选中、再次点击选区创建日程；鼠标、轻触、月历缩放后的日期命中、年历日期、Esc 和导航清选均已验证。
@@ -37,7 +55,7 @@
 - `npm run typecheck` ✅
 - `npm run lint` ✅
 - `npm run build` ✅（网页构建生成 PWA `sw.js`、`manifest.webmanifest`；原生构建禁用 Service Worker）
-- `npm run test` ✅ 43 个单元测试全部通过（含草稿、旧版本保护、连续撤销、提醒规则和自动更新流程）
+- `npm run test` ✅ 55 个单元测试全部通过（含草稿、旧版本保护、连续撤销、提醒规则、自动更新流程、数字时间与待办）
 - `npm run test:e2e` ✅ 模式感知：演示模式跑创建用例；配置凭证后可用 `E2E_EMAIL`/`E2E_PASSWORD` 跑真实登录 + 创建用例
 - RLS SQL 测试 ⚠️ 需在真实 Supabase 数据库执行（`supabase/tests/rls.test.sql`）
 
@@ -57,7 +75,7 @@
 - 复用现有前端：`tauri.conf.json` 的 `frontendDist` 指向 `../dist`，`beforeBuildCommand` 为 `npm run build`；`identifier = com.chronos.calendar`，NSIS 安装包。
 - `vite.config.ts`：Tauri 环境（`TAURI_ENV_PLATFORM`）下固定端口 1420、禁用 PWA Service Worker；Web 构建不受影响。
 - `src/platform/detectPlatform.ts` 提供运行时平台检测（`isTauri` / `isCapacitor`），登录页在原生环境提示优先「邮箱 + 密码」。
-- 当前 Windows 版本 0.3.1：`src-tauri/target/release/chronos-calendar.exe`（独立）+ `src-tauri/target/release/bundle/nsis/Chronos Calendar_0.3.1_x64-setup.exe`（安装包）。
+- 当前 Windows 版本 0.4.0：`src-tauri/target/release/chronos-calendar.exe`（独立）+ `src-tauri/target/release/bundle/nsis/Chronos Calendar_0.4.0_x64-setup.exe`（安装包）。
 - 网络：GitHub 直连超时，用 `TAURI_BUNDLER_TOOLS_GITHUB_MIRROR=https://ghfast.top` 走镜像下载 NSIS 工具链。
 - **桌面增强**：系统托盘（`tray-icon`，左键唤起 + 显示/退出菜单）、关闭到托盘（`on_window_event` 拦截 `CloseRequested`，隐藏而非退出）、单实例（`tauri-plugin-single-instance`，重复启动唤起已有窗口）。
 
