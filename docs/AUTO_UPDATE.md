@@ -1,6 +1,6 @@
 # Windows 自动更新与 Windows／Android 发布
 
-更新日期：2026-10-19。自动更新从 **0.3.0 Windows 桌面版** 开始提供。0.4.0 沿用本文流程，发布时把示例中的 `0.3.1` 替换为 `0.4.0`；本机 `release/` 已准备 Windows 安装包、签名、`latest.json` 与 Android APK。
+更新日期：2026-10-26。自动更新从 **0.3.0 Windows 桌面版** 开始提供。0.5.0 沿用本文流程，发布时把示例中的 `0.3.1` 替换为 `0.5.0`；本机 `release/` 已准备 Windows 安装包、签名、`latest.json` 与 Android APK。
 
 ## 用户如何更新
 

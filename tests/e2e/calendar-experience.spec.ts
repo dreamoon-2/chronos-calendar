@@ -6,7 +6,7 @@ test.beforeEach(async ({ page }) => {
 })
 
 async function createEvent(page: Page, title: string, end = '11:00', notes = '') {
-  await page.getByRole('button', { name: /添加日程|新建日程/ }).first().click()
+  await page.getByRole('button', { name: '新建日程', exact: true }).click()
   await page.locator('#ev-title').fill(title)
   await page.locator('#ev-st').fill('10:00')
   await page.locator('#ev-et').fill(end)
@@ -17,6 +17,22 @@ async function createEvent(page: Page, title: string, end = '11:00', notes = '')
   await page.getByRole('button', { name: '保存', exact: true }).click()
   await expect(page.getByRole('dialog')).toHaveCount(0)
   return page.locator('.chronos-event-card').filter({ hasText: title })
+}
+
+async function openMenu(page: Page) {
+  await page.getByRole('button', { name: '更多操作' }).click()
+}
+
+async function zoomWithMenu(page: Page, direction: '放大' | '缩小', times = 1) {
+  await openMenu(page)
+  for (let index = 0; index < times; index++) {
+    await page.getByRole('button', { name: `${direction}时间轴` }).click()
+  }
+  await page.keyboard.press('Escape')
+}
+
+async function zoomValue(page: Page): Promise<number> {
+  return Number(await page.locator('.chronos-calendar-surface').getAttribute('data-calendar-zoom'))
 }
 
 // 以小时记录当前手势中心对应的时间，检查缩放是否保持时间锚点。
@@ -30,35 +46,6 @@ async function anchorAt(page: Page, y?: number) {
     return { hour: (scroller.scrollTop + pointerY - box.top) / slot.getBoundingClientRect().height, y: pointerY, x: box.left + box.width / 2, top: scroller.scrollTop }
   }, y)
 }
-
-test('草稿主动保存到列表，刷新后新建为空，手动选择可修改并填入', async ({ page }) => {
-  await page.getByRole('button', { name: /添加日程|新建日程/ }).first().click()
-  await expect(page.locator('#ev-desc')).toBeHidden()
-  await page.locator('#ev-title').fill('草稿体验验证')
-  await page.getByRole('button', { name: /更多选项/ }).click()
-  await page.locator('#ev-desc').fill('未完成的备注')
-  await page.mouse.click(5, 5)
-  await expect(page.getByRole('dialog', { name: '新建日程' })).toBeVisible()
-  await page.getByRole('button', { name: '关闭', exact: true }).click()
-  await page.getByRole('button', { name: '保存草稿并关闭', exact: true }).click()
-  await page.reload()
-  await page.getByRole('button', { name: /添加日程|新建日程/ }).first().click()
-  await expect(page.locator('#ev-title')).toHaveValue('')
-  await page.getByRole('button', { name: '关闭', exact: true }).click()
-  await page.getByRole('button', { name: '日程草稿', exact: true }).click()
-  await expect(page.getByRole('dialog', { name: '日程草稿' })).toContainText('草稿体验验证')
-  await page.getByRole('button', { name: '修改并填入', exact: true }).click()
-  await expect(page.locator('#ev-title')).toHaveValue('草稿体验验证')
-  await expect(page.locator('#ev-desc')).toBeVisible()
-  await expect(page.locator('#ev-desc')).toHaveValue('未完成的备注')
-  await page.getByRole('button', { name: '保存', exact: true }).click()
-  await expect(page.getByRole('dialog')).toHaveCount(0)
-  await page.getByRole('button', { name: '日程草稿', exact: true }).click()
-  await expect(page.getByText('暂无草稿', { exact: false })).toBeVisible()
-  await page.getByRole('button', { name: '关闭', exact: true }).click()
-  await page.getByRole('button', { name: /添加日程|新建日程/ }).first().click()
-  await expect(page.locator('#ev-title')).toHaveValue('')
-})
 
 test('删除后撤销恢复完整日程，编辑后快捷键撤销', async ({ page }) => {
   await page.getByRole('button', { name: '日', exact: true }).click()
@@ -81,19 +68,18 @@ test('删除后撤销恢复完整日程，编辑后快捷键撤销', async ({ pa
   await expect(page.locator('.chronos-event-card').filter({ hasText: '修改后的标题' })).toHaveCount(0)
 })
 
-test('周日视图显示日期，月视图控件位置固定且行高随缩放改变', async ({ page }) => {
+test('周日视图显示日期与小字，月视图行高随缩放改变', async ({ page }) => {
   await expect(page.locator('.chronos-date-number')).toHaveCount(7)
-  await expect(page.locator('.chronos-weekday').first()).toContainText('一')
-  const position = await page.getByRole('slider').boundingBox()
+  await expect(page.locator('.chronos-weekday').first()).toContainText(/[一二三四五六日]/)
+  await expect(page.locator('.chronos-date-lunar').first()).not.toHaveText('')
   await page.getByRole('button', { name: '月', exact: true }).click()
-  expect(await page.getByRole('slider').boundingBox()).toEqual(position)
   const cell = page.locator('.chronos-month-cell').first()
   const initial = (await cell.boundingBox())!.height
-  await page.getByRole('slider').fill('200')
+  await zoomWithMenu(page, '放大', 2)
   await expect.poll(async () => (await cell.boundingBox())!.height).toBeGreaterThan(initial)
   await page.getByRole('button', { name: '日', exact: true }).click()
   await expect(page.locator('.chronos-date-number')).toHaveCount(1)
-  await expect(page.locator('.chronos-date-number')).toHaveText(/\d+\/\d+/)
+  await expect(page.locator('.chronos-date-number')).toHaveText(/\d+/)
 })
 
 test('卡片标题最多两行，短日程优先标题，悬停信息完整', async ({ page }) => {
@@ -107,18 +93,18 @@ test('卡片标题最多两行，短日程优先标题，悬停信息完整', as
   await expect(short.locator('.chronos-event-title')).toBeVisible()
 })
 
-test('Ctrl 滚轮和按钮缩放保持正在看的时间位置', async ({ page, isMobile }) => {
+test('Ctrl 滚轮和菜单按钮缩放保持正在看的时间位置', async ({ page, isMobile }) => {
   test.skip(isMobile, '桌面滚轮交互')
   const initial = await anchorAt(page)
   await page.mouse.move(initial.x, initial.y)
   await page.keyboard.down('Control')
   await page.mouse.wheel(0, -120)
   await page.keyboard.up('Control')
-  await expect(page.getByRole('slider')).toHaveValue('125')
+  await expect.poll(() => zoomValue(page)).toBe(125)
   await expect.poll(async () => Math.abs((await anchorAt(page, initial.y)).hour - initial.hour)).toBeLessThan(0.05)
   const beforeButton = await anchorAt(page)
-  await page.getByRole('button', { name: '放大时间表', exact: true }).click()
-  await expect(page.getByRole('slider')).toHaveValue('150')
+  await zoomWithMenu(page, '放大')
+  await expect.poll(() => zoomValue(page)).toBe(150)
   await expect.poll(async () => Math.abs((await anchorAt(page)).top / 96 - beforeButton.top / 80)).toBeLessThan(0.05)
 })
 
@@ -129,7 +115,7 @@ test('移动端双指缩放保持手势中心时间且不会误开编辑器', as
   await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: initial.x - 40, y: initial.y - 30 }, { x: initial.x + 40, y: initial.y + 30 }] })
   await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: initial.x - 60, y: initial.y - 45 }, { x: initial.x + 60, y: initial.y + 45 }] })
   await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
-  await expect(page.getByRole('slider')).toHaveValue('150')
+  await expect.poll(() => zoomValue(page)).toBe(150)
   await expect.poll(async () => Math.abs((await anchorAt(page, initial.y)).hour - initial.hour)).toBeLessThan(0.05)
   await expect(page.getByRole('dialog')).toHaveCount(0)
 })

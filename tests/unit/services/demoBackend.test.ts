@@ -85,4 +85,23 @@ describe('demoBackend', () => {
     expect(demoBackend.listTasks()).toEqual([])
     expect(demoBackend.createTask({ title: '兼容旧数据' }).title).toBe('兼容旧数据')
   })
+
+  it('creates and lists categories by sort order', () => {
+    const later = demoBackend.createCategory({ name: '阅读', color: '#0891b2', sort_order: 2 })
+    const first = demoBackend.createCategory({ name: '工作', color: '#4f46e5', sort_order: 1 })
+    expect(demoBackend.listCategories().map((category) => category.name)).toEqual([
+      first.name,
+      later.name,
+    ])
+  })
+
+  it('clears category references when a category is deleted', () => {
+    const category = demoBackend.createCategory({ name: '阅读', color: '#0891b2', sort_order: 0 })
+    const event = demoBackend.createEvent({ ...timedInsert('读书'), category_id: category.id })
+    const task = demoBackend.createTask({ title: '读书任务', category_id: category.id })
+    demoBackend.deleteCategory(category.id)
+    expect(demoBackend.listCategories()).toEqual([])
+    expect(demoBackend.listEvents(range).find((row) => row.id === event.id)?.category_id).toBeNull()
+    expect(demoBackend.listTasks().find((row) => row.id === task.id)?.category_id).toBeNull()
+  })
 })

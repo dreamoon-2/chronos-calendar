@@ -1,9 +1,13 @@
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // Tauri 构建/开发时 CLI 会注入 TAURI_ENV_PLATFORM（如 "windows"）。
 const isTauri = Boolean(process.env.TAURI_ENV_PLATFORM)
+// 演示模式：不读取 .env.local，避免误连真实 Supabase。
+const isDemo = process.env.CHRONOS_DEMO === 'true'
+const demoEnvDir = fileURLToPath(new URL('./scripts/empty-env', import.meta.url))
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
@@ -12,6 +16,7 @@ export default defineConfig(({ mode }) => {
   const enablePWA = !isTauri && !isCapacitor
 
   return {
+    envDir: isDemo ? demoEnvDir : undefined,
     plugins: [
       react(),
       ...(enablePWA

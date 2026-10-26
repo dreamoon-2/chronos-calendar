@@ -8,6 +8,22 @@ async function clickTime(page: Page, time: string, offset = 5) {
   else await page.mouse.click(x, y)
 }
 
+async function openMenu(page: Page) {
+  await page.getByRole('button', { name: '更多操作' }).click()
+}
+
+async function setZoom(page: Page, direction: '放大' | '缩小', times: number) {
+  await openMenu(page)
+  for (let index = 0; index < times; index++) {
+    await page.getByRole('button', { name: `${direction}时间轴` }).click()
+  }
+  await page.keyboard.press('Escape')
+}
+
+async function zoomValue(page: Page): Promise<number> {
+  return Number(await page.locator('.chronos-calendar-surface').getAttribute('data-calendar-zoom'))
+}
+
 /** 记录日历主动发起的滑动动画，避免依赖「恰好仍在播放」的时序。 */
 async function recordSlideAnimations(page: Page) {
   await page.evaluate(() => {
@@ -43,17 +59,18 @@ test.beforeEach(async ({ page }) => {
   test.skip(!await page.getByText('演示模式', { exact: true }).isVisible(), '需要演示模式')
 })
 
-test('视图按年、月、周、日排列，年视图展示十二个月，切换保留缩放', async ({ page }) => {
-  await expect(page.getByRole('group', { name: '日历视图' }).getByRole('button')).toHaveText(['年', '月', '周', '日'])
-  await page.getByRole('slider').fill('125')
+test('视图按年、月、周、日、日程排列，年视图展示十二个月，切换保留缩放', async ({ page }) => {
+  await expect(page.getByRole('group', { name: '日历视图' }).getByRole('button')).toHaveText(['年', '月', '周', '日', '日程'])
+  await setZoom(page, '放大', 1)
+  await expect.poll(() => zoomValue(page)).toBe(125)
   await page.getByRole('button', { name: '年', exact: true }).click()
   await expect(page.getByRole('button', { name: '年', exact: true })).toHaveAttribute('aria-pressed', 'true')
   await expect(page.locator('.chronos-year-month')).toHaveCount(12)
-  await expect(page.getByRole('slider')).toHaveValue('125')
-  await page.getByRole('button', { name: '下一段', exact: true }).click()
+  await expect.poll(() => zoomValue(page)).toBe(125)
+  await page.keyboard.press('ArrowRight')
   const nextYear = String(new Date().getFullYear() + 1)
   await expect(page.locator('h1')).toHaveText(`${nextYear}年`)
-  await page.getByRole('button', { name: '今天', exact: true }).first().click()
+  await page.getByRole('button', { name: '回到今天' }).first().click()
   await page.getByRole('button', { name: '月', exact: true }).click()
   await expect(page.locator('.chronos-month-cell')).not.toHaveCount(0)
   await page.getByRole('button', { name: '周', exact: true }).click()
@@ -98,7 +115,6 @@ test('拖选完成后保留范围，再点击范围内任意位置创建', async
 
 test('月视图先选日期再创建全天日程，Esc 取消选区', async ({ page }) => {
   await page.getByRole('button', { name: '月', exact: true }).click()
-  await page.getByRole('slider').fill('200')
   const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Shanghai' })
   const cell = page.locator(`.chronos-month-cell[data-date="${today}"]`)
   await cell.click({ position: { x: 12, y: 40 } })
@@ -142,7 +158,7 @@ test('年视图日期支持两步创建，动画尊重系统减少动态效果�
 
 test('每条日程独立选择提醒，新建默认不提醒，编辑和刷新保持选择', async ({ page }) => {
   await page.getByRole('button', { name: '日', exact: true }).click()
-  await page.getByRole('button', { name: /添加日程|新建日程/ }).first().click()
+  await page.getByRole('button', { name: '新建日程', exact: true }).click()
   await expect(page.getByRole('checkbox', { name: '此日程系统提醒' })).not.toBeChecked()
   await page.locator('#ev-title').fill('单独提醒测试')
   await page.getByRole('checkbox', { name: '此日程系统提醒' }).check()
@@ -156,6 +172,6 @@ test('每条日程独立选择提醒，新建默认不提醒，编辑和刷新�
   await expect(page.getByLabel('此日程提前提醒时间')).toHaveValue('0')
   await page.getByRole('checkbox', { name: '此日程系统提醒' }).uncheck()
   await page.getByRole('button', { name: '保存', exact: true }).click()
-  await page.getByRole('button', { name: /添加日程|新建日程/ }).first().click()
+  await page.getByRole('button', { name: '新建日程', exact: true }).click()
   await expect(page.getByRole('checkbox', { name: '此日程系统提醒' })).not.toBeChecked()
 })

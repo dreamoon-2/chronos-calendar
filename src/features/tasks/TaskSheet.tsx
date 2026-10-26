@@ -28,14 +28,11 @@ export function TaskSheet({
   if (!open) return null
 
   return (
-    <aside
-      aria-label="待办清单"
-      className="chronos-task-sheet fixed inset-x-0 bottom-0 z-40 flex max-h-[58dvh] flex-col rounded-t-2xl border-t border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900 md:hidden"
-    >
-      <div className="flex justify-center pt-2" aria-hidden="true">
-        <span className="h-1 w-10 rounded-full bg-slate-200 dark:bg-slate-700" />
+    <aside aria-label="待办清单" className="chronos-task-sheet md:hidden">
+      <div className="chronos-task-sheet-grip" aria-hidden="true">
+        <span />
       </div>
-      <div className="min-h-0 overflow-y-auto px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-2">
+      <div className="chronos-task-sheet-body">
         <TaskPanel
           variant="sheet"
           tasks={tasks}

@@ -1,15 +1,8 @@
-import { useMemo, type ReactNode } from 'react'
-import clsx from 'clsx'
-import {
-  addDays,
-  addMonths,
-  format,
-  isSameMonth,
-  isToday,
-  startOfMonth,
-  startOfWeek,
-} from 'date-fns'
+import type { ReactNode } from 'react'
 import type { CategoryRow } from '../../types/database'
+import { version } from '../../../package.json'
+import { CalendarIcon } from '../../components/ui/Icons'
+import { MiniCalendar } from './MiniCalendar'
 
 interface SidebarProps {
   currentDate: Date
@@ -22,8 +15,7 @@ interface SidebarProps {
   taskPanel?: ReactNode
 }
 
-const WEEKDAYS = ['一', '二', '三', '四', '五', '六', '日']
-
+/** 桌面端侧栏：品牌、迷你月历、待办与分类筛选。 */
 export function Sidebar({
   currentDate,
   categories,
@@ -33,124 +25,58 @@ export function Sidebar({
   onGotoDate,
   taskPanel,
 }: SidebarProps) {
-  const gridStart = useMemo(
-    () => startOfWeek(startOfMonth(currentDate), { weekStartsOn: 1 }),
-    [currentDate],
-  )
-  const days = useMemo(
-    () => Array.from({ length: 42 }, (_, i) => addDays(gridStart, i)),
-    [gridStart],
-  )
-
+  const monthKey = `${currentDate.getFullYear()}-${currentDate.getMonth()}`
   return (
-    <div className="flex h-full flex-col gap-5 overflow-y-auto p-4">
-      {/* 迷你月历导航 */}
-      <section>
-        <div className="mb-2 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-            {format(currentDate, 'yyyy年M月')}
-          </h3>
-          <div className="flex overflow-hidden rounded-md border border-slate-200 dark:border-slate-700">
-            <button
-              type="button"
-              onClick={() => onGotoDate(addMonths(currentDate, -1))}
-              aria-label="上个月"
-              className="px-2 py-0.5 text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
-            >
-              ‹
-            </button>
-            <button
-              type="button"
-              onClick={() => onGotoDate(addMonths(currentDate, 1))}
-              aria-label="下个月"
-              className="border-l border-slate-200 px-2 py-0.5 text-slate-500 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-            >
-              ›
-            </button>
-          </div>
-        </div>
+    <div className="chronos-sidebar-inner">
+      <div className="chronos-brand">
+        <span className="chronos-brand-icon">
+          <CalendarIcon width={18} height={18} />
+        </span>
+        <span className="chronos-brand-name">Chronos</span>
+        <span className="chronos-brand-version">v{version}</span>
+      </div>
 
-        <div className="grid grid-cols-7 gap-1 text-center">
-          {WEEKDAYS.map((w) => (
-            <span key={w} className="text-[10px] text-slate-400">
-              {w}
-            </span>
-          ))}
-          {days.map((d, i) => {
-            const inMonth = isSameMonth(d, currentDate)
-            const today = isToday(d)
-            return (
-              <button
-                key={i}
-                type="button"
-                onClick={() => onGotoDate(d)}
-                className={clsx(
-                  'flex h-7 items-center justify-center rounded-md text-xs transition',
-                  inMonth
-                    ? 'text-slate-700 dark:text-slate-200'
-                    : 'text-slate-300 dark:text-slate-600',
-                  today
-                    ? 'bg-brand-600 font-bold text-white'
-                    : 'hover:bg-slate-100 dark:hover:bg-slate-800',
-                )}
-              >
-                {format(d, 'd')}
-              </button>
-            )
-          })}
-        </div>
-      </section>
+      <MiniCalendar key={monthKey} currentDate={currentDate} onGotoDate={onGotoDate} />
 
       {taskPanel}
 
-      {/* 分类筛选 */}
-      <section className="border-t border-slate-200 pt-4 dark:border-slate-700">
-        <div className="mb-2 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-            分类筛选
-          </h3>
+      <section className="chronos-sidebar-section">
+        <div className="chronos-sidebar-heading">
+          <h3>分类</h3>
           {hiddenCategories.size > 0 && (
-            <button
-              type="button"
-              onClick={onShowAllCategories}
-              className="text-xs text-brand-600 hover:underline dark:text-brand-300"
-            >
+            <button type="button" onClick={onShowAllCategories} className="chronos-text-button">
               全部显示
             </button>
           )}
         </div>
 
-        <ul className="space-y-0.5">
-          {categories.map((c) => {
-            const hidden = hiddenCategories.has(c.id)
+        <ul className="chronos-category-list">
+          {categories.map((category) => {
+            const hidden = hiddenCategories.has(category.id)
             return (
-              <li key={c.id}>
+              <li key={category.id}>
                 <button
                   type="button"
-                  onClick={() => onToggleCategory(c.id)}
-                  className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-slate-100 dark:hover:bg-slate-800"
+                  onClick={() => onToggleCategory(category.id)}
+                  aria-pressed={!hidden}
+                  className="chronos-category-button"
                 >
                   <span
-                    className="h-3 w-3 shrink-0 rounded-full border"
+                    className="chronos-category-dot"
                     style={{
-                      backgroundColor: hidden ? 'transparent' : c.color,
-                      borderColor: c.color,
+                      backgroundColor: hidden ? 'transparent' : category.color,
+                      borderColor: category.color,
                     }}
                   />
-                  <span
-                    className={clsx(
-                      'flex-1 truncate',
-                      hidden && 'text-slate-400 line-through dark:text-slate-500',
-                    )}
-                  >
-                    {c.name}
+                  <span className={hidden ? 'chronos-category-name is-hidden' : 'chronos-category-name'}>
+                    {category.name}
                   </span>
                 </button>
               </li>
             )
           })}
           {categories.length === 0 && (
-            <li className="text-xs text-slate-400">暂无分类，可在设置中添加。</li>
+            <li className="chronos-sidebar-empty">还没有分类，可在设置或新建日程时添加。</li>
           )}
         </ul>
       </section>

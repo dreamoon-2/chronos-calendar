@@ -4,6 +4,22 @@
 
 当前目录和功能入口见 [项目结构说明](PROJECT_STRUCTURE.md)，文档导航见 [README](README.md)。原始规格中的目录树保留为早期设计记录。
 
+## v0.5.0 — 2026-10-26
+
+- 移除双端日程草稿：删除草稿保存／列表／恢复、关闭提示中的草稿选项、顶栏草稿入口与 `chronos.drafts.*` 读取；关闭未保存表单只能放弃修改或继续编辑。
+- 保留并适配待办清单：桌面侧栏、移动端顶栏清单图标（数量角标）与底部抽屉；拖入日历生成日程、自动完成、两步点击编辑、编辑器／侧栏拖回；`tasks` 表与 `events.task_id` 继续使用。
+- 移动端新增左右滑动切换视图：年 ↔ 月 ↔ 周 ↔ 日 ↔ 日程；纵向滚动、双指缩放与事件拖动不冲突，滑动后短暂忽略点击。切换动作延后到 FullCalendar 处理完 `touchend`，避免旧视图 DOM 已卸载导致的空引用。
+- 新增「日程」列表视图（FullCalendar `listWeek`），显示星期、日期、农历/节气、时间与标题，提供空状态引导。
+- 左侧时间列只显示小时数字，列宽由约 44px 降到约 28px；窄列日程只显示开始时间，标题最多三行。
+- 界面重做：大标题「2026/10」、三个图标操作（今天／待办／更多）、五段下划线视图标签、农历/节气日期栏、右下角「今 / ＋」、桌面侧栏改为品牌 + 迷你月历 + 待办清单 + 分类筛选、深色模式同步。
+- 去掉上一段／下一段箭头：标题与日历图标打开日期选择浮层，桌面保留 `← / →` 与 `T` 快捷键；缩放移入更多菜单，保留 Ctrl+滚轮、双指缩放和本机记忆。
+- 编辑响应优化：`CalendarGrid` 使用 `memo` 并稳定全部回调，打开编辑器／设置／详情不再重排 FullCalendar；先绘制抽屉再在下一帧聚焦标题；类型标签独立渲染；移除每次按键的 `JSON.stringify`；保存／删除固定在底部操作栏。
+- 取消默认任务类型：删除 `categoryPresets` 与设置页基础类型入口；新建日程使用彩色标签选择类型，并可在表单内新建类型（命名 + 主题色）。
+- 新增 `utils/lunar.ts`：用 `Intl` 中国历法读取农历日，配合 1900–2100 节气公式显示「初十」「霜降」等，带缓存与降级。
+- 新增 `npm run dev:demo`：使用空 env 目录启动，不读取 `.env.local`，方便演示与浏览器测试。
+- 验证：`typecheck`、`lint`、61 项单元测试通过；演示服务器下 Playwright 52 项通过、12 项按平台／真实账号条件跳过；生产构建通过。
+- 待真实环境验收：Android 真机滑动、软键盘、通知；Windows 安装包、托盘与系统通知；真实 Supabase 账号的同步与 RLS。
+
 ## v0.4.0 — 2026-10-19
 
 - 第一次点击时间表改为选中点击位置所在整点一小时（x:00–x+1:00）；新增 `SelectionOverlay` 按真实时间格坐标绘制蓝色描边，底部提示提供「新建日程」与「取消」。选区上下新增可拖动粗线，按 15 分钟调整开始／结束时间。
@@ -56,8 +72,8 @@
 - `npm run typecheck` ✅
 - `npm run lint` ✅
 - `npm run build` ✅（网页构建生成 PWA `sw.js`、`manifest.webmanifest`；原生构建禁用 Service Worker）
-- `npm run test` ✅ 55 个单元测试全部通过（含草稿、旧版本保护、连续撤销、提醒规则、自动更新流程、数字时间与待办）
-- `npm run test:e2e` ✅ 模式感知：演示模式跑创建用例；配置凭证后可用 `E2E_EMAIL`/`E2E_PASSWORD` 跑真实登录 + 创建用例
+- `npm run test` ✅ 61 个单元测试全部通过（含关闭选择、旧版本保护、连续撤销、提醒规则、自动更新流程、数字时间、农历、待办与演示后端）
+- `npm run test:e2e` ✅ 演示服务器下 52 项通过、12 项按平台／真实账号条件跳过；可用 `E2E_EMAIL`/`E2E_PASSWORD` 跑真实登录 + 创建用例
 - RLS SQL 测试 ⚠️ 需在真实 Supabase 数据库执行（`supabase/tests/rls.test.sql`）
 
 ## 补充实现（按实机反馈迭代）
@@ -76,7 +92,7 @@
 - 复用现有前端：`tauri.conf.json` 的 `frontendDist` 指向 `../dist`，`beforeBuildCommand` 为 `npm run build`；`identifier = com.chronos.calendar`，NSIS 安装包。
 - `vite.config.ts`：Tauri 环境（`TAURI_ENV_PLATFORM`）下固定端口 1420、禁用 PWA Service Worker；Web 构建不受影响。
 - `src/platform/detectPlatform.ts` 提供运行时平台检测（`isTauri` / `isCapacitor`），登录页在原生环境提示优先「邮箱 + 密码」。
-- 当前 Windows 版本 0.4.0：`src-tauri/target/release/chronos-calendar.exe`（独立）+ `src-tauri/target/release/bundle/nsis/Chronos Calendar_0.4.0_x64-setup.exe`（安装包）。
+- 当前 Windows 版本 0.5.0：`src-tauri/target/release/chronos-calendar.exe`（独立）+ `src-tauri/target/release/bundle/nsis/Chronos Calendar_0.5.0_x64-setup.exe`（安装包）。
 - 网络：GitHub 直连超时，用 `TAURI_BUNDLER_TOOLS_GITHUB_MIRROR=https://ghfast.top` 走镜像下载 NSIS 工具链。
 - **桌面增强**：系统托盘（`tray-icon`，左键唤起 + 显示/退出菜单）、关闭到托盘（`on_window_event` 拦截 `CloseRequested`，隐藏而非退出）、单实例（`tauri-plugin-single-instance`，重复启动唤起已有窗口）。
 

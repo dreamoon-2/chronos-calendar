@@ -1,5 +1,6 @@
-// 与 supabase/migrations/202610080001_initial_schema.sql、
-// 202610190001_tasks.sql 及 202610200001_task_event_link.sql 对齐的数据类型。
+// 与 supabase/migrations 对齐的数据类型：
+// 202610080001_initial_schema.sql（分类与日程）、202610190001_tasks.sql（待办）、
+// 202610200001_task_event_link.sql（日程与待办的关联）。
 
 export interface CategoryRow {
   id: string
@@ -15,6 +16,7 @@ export interface EventRow {
   id: string
   user_id: string
   category_id: string | null
+  /** 由待办排入时关联的待办 ID；普通日程为 null。 */
   task_id: string | null
   title: string
   description: string
@@ -70,7 +72,7 @@ export interface TaskInsert {
   category_id?: string | null
 }
 
-/** 待办更新载荷（目前只修改标题、备注、完成状态与预计时长）。 */
+/** 待办更新载荷（标题、备注、完成状态、预计时长与分类）。 */
 export interface TaskUpdate {
   title?: string
   notes?: string

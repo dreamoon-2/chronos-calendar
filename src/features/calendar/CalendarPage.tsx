@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import {
   type CalendarRef,
   type DateSelectInfo,
   type DatesSetInfo,
+  type EventApi,
   type EventClickInfo,
   type EventDropInfo,
   type EventReceiveInfo,
@@ -19,7 +20,6 @@ import { useAuth } from '../auth/AuthProvider'
 import { useCategories } from '../categories/categoryQueries'
 import { EventDetails } from '../events/EventDetails'
 import { EventEditor } from '../events/EventEditor'
-import { EventDraftList } from '../events/EventDraftList'
 import { toCalendarEvent, type CalendarEvent } from '../events/eventMappers'
 import {
   emptyForm,
@@ -48,6 +48,7 @@ import { useCalendarRange } from './useCalendarRange'
 import { useCalendarZoom } from './useCalendarZoom'
 import { useEventUndo } from '../events/useEventUndo'
 import { useDesktopReminders } from '../desktop/useDesktopReminders'
+import { neighboringView } from './calendarViews'
 
 interface EditorState {
   mode: 'create' | 'edit'
@@ -55,7 +56,6 @@ interface EditorState {
   eventId?: string
   version?: number
   original?: EventRow
-  draftId?: string
 }
 
 function selectToForm(info: DateSelectInfo): EventFormValues {
@@ -113,13 +113,13 @@ export function CalendarPage() {
     useCalendarRange()
   const categoriesQ = useCategories()
   const eventsQ = useEventsInRange(range)
+  const refetchEvents = eventsQ.refetch
   useEventsRealtime()
   useResyncOnRecover()
   const invalidateAll = useInvalidateAll()
 
   const [editor, setEditor] = useState<EditorState | null>(null)
   const editorCloseRef = useRef<(() => void) | null>(null)
-  const [draftsOpen, setDraftsOpen] = useState(false)
   const [details, setDetails] = useState<CalendarEvent | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [hiddenCategories, setHiddenCategories] = useState<Set<string>>(
@@ -131,6 +131,11 @@ export function CalendarPage() {
   // 以服务端最新一行为准，避免 FullCalendar 事件对象在拖动/刷新后仍保留旧 version。
   const latestRows = useRef(new Map<string, EventRow>())
   const busyEvents = useRef(new Set<string>())
+  const viewTypeRef = useRef(viewType)
+
+  useEffect(() => {
+    viewTypeRef.current = viewType
+  }, [viewType])
 
   useEffect(() => {
     const rows = latestRows.current
@@ -140,11 +145,6 @@ export function CalendarPage() {
     }
   }, [eventsQ.data])
 
-  const runUndo = useCallback(async () => {
-    const restored = await undo()
-    if (restored) latestRows.current.set(restored.id, restored)
-  }, [undo])
-
   const tasksQ = useTasks()
   const createTaskM = useCreateTask()
   const updateTaskM = useUpdateTask()
@@ -152,23 +152,47 @@ export function CalendarPage() {
   const unscheduleTaskEventM = useUnscheduleTaskEvent()
   const createEventM = useCreateEvent()
 
+  const api = useCallback(() => calendarRef.current?.getApi(), [])
+
+  const runUndo = useCallback(async () => {
+    const restored = await undo()
+    if (restored) latestRows.current.set(restored.id, restored)
+  }, [undo])
+
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       const element = event.target as HTMLElement | null
-      if (editor || settingsOpen || draftsOpen || element?.closest('input, textarea, select, [contenteditable="true"]')) return
+      if (editor || settingsOpen || element?.closest('input, textarea, select, [contenteditable="true"]')) return
       if (event.key === 'Escape' && selectedTaskEventId) {
         setSelectedTaskEventId(null)
+        return
+      }
+      if (event.key === 'Escape') {
+        setDetails(null)
         return
       }
       if ((event.ctrlKey || event.metaKey) && !event.shiftKey && event.key.toLowerCase() === 'z') {
         event.preventDefault()
         setDetails(null)
         void runUndo()
+        return
+      }
+      // 去掉左右箭头按钮后，桌面端仍可用方向键翻页。
+      if (event.key === 'ArrowLeft') {
+        api()?.prev()
+        return
+      }
+      if (event.key === 'ArrowRight') {
+        api()?.next()
+        return
+      }
+      if (event.key.toLowerCase() === 't') {
+        api()?.today()
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [editor, settingsOpen, draftsOpen, selectedTaskEventId, runUndo])
+  }, [editor, settingsOpen, selectedTaskEventId, runUndo, api])
 
   // Android 返回键：优先关闭弹层，否则退出应用
   useBackButton(
@@ -177,7 +201,6 @@ export function CalendarPage() {
         editorCloseRef.current?.()
         return true
       }
-      if (draftsOpen) { setDraftsOpen(false); return true }
       if (tasksOpen) { setTasksOpen(false); return true }
       if (selectedTaskEventId) { setSelectedTaskEventId(null); return true }
       if (details) {
@@ -189,7 +212,7 @@ export function CalendarPage() {
         return true
       }
       return false
-    }, [editor, details, settingsOpen, draftsOpen, tasksOpen, selectedTaskEventId]),
+    }, [editor, details, settingsOpen, tasksOpen, selectedTaskEventId]),
   )
 
   const categoryById = useMemo(
@@ -213,8 +236,6 @@ export function CalendarPage() {
       return !hiddenCategories.has(cid)
     })
   }, [calendarEvents, hiddenCategories])
-
-  const api = useCallback(() => calendarRef.current?.getApi(), [])
 
   const onCalendarDatesSet = useCallback(
     (info: DatesSetInfo) => {
@@ -244,11 +265,32 @@ export function CalendarPage() {
     [api],
   )
 
+  const goToday = useCallback(() => {
+    api()?.today()
+  }, [api])
+
+  const changeView = useCallback(
+    (view: string) => {
+      api()?.changeView(view)
+    },
+    [api],
+  )
+
+  const swipeView = useCallback(
+    (direction: 1 | -1) => {
+      const next = neighboringView(viewTypeRef.current, direction)
+      if (!next) return
+      api()?.changeView(next)
+    },
+    [api],
+  )
+
   const openCreate = useCallback(
     (initial?: EventFormValues) => {
       api()?.unselect()
       setTasksOpen(false)
       setSelectedTaskEventId(null)
+      setDetails(null)
       setEditor({ mode: 'create', initial: initial ?? emptyForm() })
     },
     [api],
@@ -283,10 +325,9 @@ export function CalendarPage() {
       if (!raw) return
       const latest = latestRows.current.get(raw.id) ?? raw
       const calendarEvent = toCalendarEvent(latest, categoryById.get(latest.category_id ?? ''))
-      // 待办日程使用两步操作：第一次点击选中（可拖动／拉伸），再次点击进入编辑。
+      // 待办日程使用两步操作：第一次点击由日历选中，再次点击进入编辑。
       if (latest.task_id) {
         if (selectedTaskEventId === info.event.id) {
-          setSelectedTaskEventId(null)
           openEdit(calendarEvent)
         } else {
           setSelectedTaskEventId(info.event.id)
@@ -330,7 +371,7 @@ export function CalendarPage() {
         info.revert()
         if (err instanceof ConflictError) {
           latestRows.current.delete(eventId)
-          await eventsQ.refetch()
+          await refetchEvents()
           toast.error('该日程已在其他设备更新，已刷新，请重试')
         } else {
           toast.error(toErrorMessage(err))
@@ -340,7 +381,7 @@ export function CalendarPage() {
         invalidateAll()
       }
     },
-    [user, toast, invalidateAll, undoBusy, remember, eventsQ],
+    [user, toast, invalidateAll, undoBusy, remember, refetchEvents],
   )
 
   const onEventResize = useCallback(
@@ -374,7 +415,7 @@ export function CalendarPage() {
         info.revert()
         if (err instanceof ConflictError) {
           latestRows.current.delete(eventId)
-          await eventsQ.refetch()
+          await refetchEvents()
           toast.error('该日程已在其他设备更新，已刷新，请重试')
         } else {
           toast.error(toErrorMessage(err))
@@ -384,12 +425,7 @@ export function CalendarPage() {
         invalidateAll()
       }
     },
-    [user, toast, invalidateAll, undoBusy, remember, eventsQ],
-  )
-
-  const defaultTaskCategoryId = useMemo(
-    () => (categoriesQ.data ?? []).find((category) => category.name === '任务')?.id ?? null,
-    [categoriesQ.data],
+    [user, toast, invalidateAll, undoBusy, remember, refetchEvents],
   )
 
   const activeTaskCount = useMemo(
@@ -404,7 +440,7 @@ export function CalendarPage() {
       try {
         await createTaskM.mutateAsync({
           title,
-          category_id: defaultTaskCategoryId,
+          category_id: null,
           estimated_minutes: 60,
         })
       } catch (err) {
@@ -412,7 +448,7 @@ export function CalendarPage() {
         throw err
       }
     },
-    [createTaskM, defaultTaskCategoryId, toast],
+    [createTaskM, toast],
   )
 
   const toggleTask = useCallback(
@@ -451,7 +487,7 @@ export function CalendarPage() {
       const finish = end ?? new Date(start.getTime() + task.estimated_minutes * 60_000)
       const categoryId = task.category_id && categoryById.has(task.category_id)
         ? task.category_id
-        : defaultTaskCategoryId
+        : null
       const timePayload = allDay
         ? {
             all_day: true,
@@ -491,7 +527,7 @@ export function CalendarPage() {
         toast.error(toErrorMessage(err))
       }
     },
-    [tasksQ.data, createEventM, updateTaskM, defaultTaskCategoryId, categoryById, toast],
+    [tasksQ.data, createEventM, updateTaskM, categoryById, toast],
   )
 
   const unscheduleEvent = useCallback(
@@ -520,8 +556,40 @@ export function CalendarPage() {
     [unscheduleTaskEventM, toast, forget],
   )
 
-  const selectTaskEvent = useCallback((id: string) => {
+  const selectTaskEvent = useCallback((id: string | null) => {
     setSelectedTaskEventId(id)
+  }, [])
+
+  const unscheduleGridEvent = useCallback(
+    (event: EventApi) => {
+      const raw = event.extendedProps.raw as EventRow | undefined
+      if (raw) void unscheduleEvent(raw).catch(() => {})
+    },
+    [unscheduleEvent],
+  )
+
+  const onSurfacePointerDown = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      setTasksOpen(false)
+      if (!(event.target as Element | null)?.closest('.chronos-event')) {
+        setSelectedTaskEventId(null)
+      }
+    },
+    [],
+  )
+
+  const openTasks = useCallback(() => {
+    if (window.matchMedia('(min-width: 768px)').matches) {
+      setSidebarOpen(true)
+      window.setTimeout(() => {
+        document.getElementById('chronos-task-panel')?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest',
+        })
+      }, 60)
+    } else {
+      setTasksOpen(true)
+    }
   }, [])
 
   const handleEventChanged = useCallback(
@@ -538,16 +606,15 @@ export function CalendarPage() {
       <AppShell
         isDemo={isDemo}
         title={title}
+        currentDate={currentDate}
         viewType={viewType}
         zoom={zoom}
         onChangeZoom={changeZoom}
-        onPrev={() => api()?.prev()}
-        onNext={() => api()?.next()}
-        onToday={() => api()?.today()}
-        onChangeView={(v) => api()?.changeView(v)}
+        onChangeView={changeView}
+        onToday={goToday}
+        onGotoDate={gotoDate}
         onCreate={() => openCreate()}
-        onOpenDrafts={() => { api()?.unselect(); setTasksOpen(false); setDraftsOpen(true) }}
-        onOpenTasks={() => setTasksOpen(true)}
+        onOpenTasks={openTasks}
         taskCount={activeTaskCount}
         onOpenSettings={() => { setTasksOpen(false); setSettingsOpen(true) }}
         sidebarOpen={sidebarOpen}
@@ -574,42 +641,31 @@ export function CalendarPage() {
           />
         }
       >
-        <div className="h-full p-0 sm:p-3">
-          <div className="h-full overflow-hidden rounded-none bg-white shadow-sm dark:bg-slate-900 sm:rounded-xl sm:border sm:border-slate-200 dark:sm:border-slate-800">
-            <CalendarGrid
-              calendarRef={calendarRef}
-              events={visibleEvents}
-              zoom={zoom}
-              onChangeZoom={changeZoom}
-              onDatesSet={onCalendarDatesSet}
-              onSelect={onSelect}
-              onEventClick={onEventClick}
-              onEventDrop={onEventDrop}
-              onEventResize={onEventResize}
-              onTaskDrop={onTaskDrop}
-              selectedEventId={selectedTaskEventId}
-              onSelectEvent={selectTaskEvent}
-              onUnscheduleEvent={(event) => {
-                const raw = event.extendedProps.raw as EventRow | undefined
-                if (raw) void unscheduleEvent(raw).catch(() => {})
-              }}
-              onSurfacePointerDown={(event) => {
-                setTasksOpen(false)
-                if (!(event.target as Element | null)?.closest('.chronos-event')) {
-                  setSelectedTaskEventId(null)
-                }
-              }}
-            />
+        <CalendarGrid
+          calendarRef={calendarRef}
+          events={visibleEvents}
+          zoom={zoom}
+          onChangeZoom={changeZoom}
+          onDatesSet={onCalendarDatesSet}
+          onSelect={onSelect}
+          onEventClick={onEventClick}
+          onEventDrop={onEventDrop}
+          onEventResize={onEventResize}
+          onTaskDrop={onTaskDrop}
+          selectedEventId={selectedTaskEventId}
+          onSelectEvent={selectTaskEvent}
+          onUnscheduleEvent={unscheduleGridEvent}
+          onSurfacePointerDown={onSurfacePointerDown}
+          onSwipeView={swipeView}
+        />
+        {undoEntry && (
+          <div className="chronos-undo-bar" role="status">
+            <span className="truncate">已{undoEntry.label}「{undoEntry.before.title}」</span>
+            <button type="button" onClick={() => { setDetails(null); void runUndo() }} disabled={undoBusy} aria-label="撤销上一步" className="shrink-0 font-semibold text-sky-600 dark:text-sky-300">
+              {undoBusy ? '撤销中…' : '撤销'}<span className="ml-1 hidden text-xs sm:inline">Ctrl+Z</span>
+            </button>
           </div>
-          {undoEntry && (
-            <div className="chronos-undo-bar" role="status">
-              <span className="truncate">已{undoEntry.label}「{undoEntry.before.title}」</span>
-              <button type="button" onClick={() => { setDetails(null); void runUndo() }} disabled={undoBusy} aria-label="撤销上一步" className="shrink-0 font-semibold text-sky-600 dark:text-sky-300">
-                {undoBusy ? '撤销中…' : '撤销'}<span className="ml-1 hidden text-xs sm:inline">Ctrl+Z</span>
-              </button>
-            </div>
-          )}
-        </div>
+        )}
       </AppShell>
 
       {editor && (
@@ -621,20 +677,12 @@ export function CalendarPage() {
           categories={categoriesQ.data ?? []}
           categoriesReady={categoriesQ.isSuccess}
           original={editor.original}
-          draftId={editor.draftId}
           closeRef={editorCloseRef}
           onChanged={handleEventChanged}
           onUnschedule={unscheduleEvent}
           onClose={() => setEditor(null)}
         />
       )}
-
-      {draftsOpen && <EventDraftList userId={user!.id} onClose={() => setDraftsOpen(false)} onSelect={draft => {
-        setDraftsOpen(false)
-        setEditor({ mode: 'create', draftId: draft.id, initial: { ...draft.values,
-          categoryId: categoriesQ.data?.some(category => category.id === draft.values.categoryId) ? draft.values.categoryId : null,
-        } })
-      }} />}
 
       <EventDetails
         event={details}

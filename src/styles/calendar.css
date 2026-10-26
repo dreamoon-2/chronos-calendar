@@ -1,39 +1,1174 @@
-/* 留白、细网格、蓝色日期强调与浅色日程块。 */
-.chronos-calendar-surface {
-  --fc-classic-border: #edf0f4;
-  --fc-classic-today: #f0f8ff;
-  --fc-classic-primary: #0284c7;
-  --fc-classic-foreground: #475569;
-  --fc-classic-now: #f43f5e;
-  /* 原生选区只负责底色，边框和范围由 SelectionOverlay 绘制。 */
-  --fc-classic-highlight: #0284c72b;
-  touch-action: pan-x pan-y;
+/* =========================================================
+   Chronos Calendar 0.5.0 — 清爽白底、细网格、蓝色日期强调
+   ========================================================= */
+
+:root {
+  --chronos-panel: #ffffff;
+  --chronos-panel-soft: #f8fafc;
+  --chronos-fg: #0f172a;
+  --chronos-fg-soft: #334155;
+  --chronos-muted: #94a3b8;
+  --chronos-faint: #cbd5e1;
+  --chronos-line: #eef2f7;
+  --chronos-line-strong: #e2e8f0;
+  --chronos-hover: #f6f8fb;
+  --chronos-today-bg: #f6fbff;
+  --chronos-accent: #0284c7;
+  --chronos-accent-strong: #0369a1;
+  --chronos-accent-soft: #e0f2fe;
+  --chronos-danger: #e11d48;
 }
+
+.dark {
+  --chronos-panel: #0f172a;
+  --chronos-panel-soft: #111c2e;
+  --chronos-fg: #f1f5f9;
+  --chronos-fg-soft: #cbd5e1;
+  --chronos-muted: #7c8ba1;
+  --chronos-faint: #475569;
+  --chronos-line: #1e293b;
+  --chronos-line-strong: #273449;
+  --chronos-hover: #172033;
+  --chronos-today-bg: #0d1b2b;
+  --chronos-accent: #38bdf8;
+  --chronos-accent-strong: #7dd3fc;
+  --chronos-accent-soft: #0c4a6e;
+  --chronos-danger: #fb7185;
+}
+
+/* ---------- 顶栏 ---------- */
+.chronos-topbar {
+  border-bottom: 1px solid var(--chronos-line);
+}
+.chronos-topbar-main {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 8px 2px;
+}
+@media (min-width: 640px) {
+  .chronos-topbar-main {
+    min-height: 60px;
+    padding: 10px 18px 2px;
+  }
+}
+.chronos-icon-button {
+  display: inline-flex;
+  height: 40px;
+  width: 40px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  color: var(--chronos-fg-soft);
+  transition: background-color 150ms ease, color 150ms ease;
+}
+.chronos-icon-button:hover {
+  background: var(--chronos-hover);
+  color: var(--chronos-fg);
+}
+.chronos-icon-button.is-active {
+  background: var(--chronos-hover);
+  color: var(--chronos-fg);
+}
+.chronos-task-trigger {
+  position: relative;
+}
+.chronos-icon-badge {
+  position: absolute;
+  top: 3px;
+  right: 2px;
+  display: inline-flex;
+  min-width: 15px;
+  height: 15px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--chronos-accent);
+  padding: 0 4px;
+  font-size: 9px;
+  font-weight: 650;
+  color: #fff;
+  line-height: 1;
+}
+.chronos-menu-badge {
+  margin-left: auto;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: var(--chronos-panel-soft);
+  padding: 0 5px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 16px;
+  text-align: center;
+  color: var(--chronos-muted);
+}
+.chronos-picker-icon {
+  color: var(--chronos-fg);
+}
+.chronos-title {
+  margin: 0;
+  min-width: 0;
+  font-size: 1.72rem;
+  line-height: 1.12;
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  color: var(--chronos-fg);
+}
+@media (min-width: 640px) {
+  .chronos-title {
+    font-size: 2rem;
+  }
+}
+.chronos-title-button {
+  display: flex;
+  align-items: baseline;
+  border-radius: 8px;
+  padding: 2px 4px;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+}
+.chronos-title-button:hover {
+  color: var(--chronos-accent);
+}
+.chronos-title-sep {
+  margin: 0 0.05em;
+  font-size: 0.86em;
+  font-weight: 500;
+  color: var(--chronos-faint);
+}
+
+.chronos-view-tabs {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  border-bottom: 1px solid var(--chronos-line);
+}
+@media (min-width: 640px) {
+  .chronos-view-tabs {
+    width: 420px;
+    margin-left: 10px;
+    border-bottom: 0;
+  }
+}
+.chronos-view-tab {
+  padding: 8px 0 11px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--chronos-muted);
+  transition: color 150ms ease;
+}
+.chronos-view-tab:hover {
+  color: var(--chronos-fg-soft);
+}
+.chronos-view-tab.is-active {
+  color: var(--chronos-fg);
+  font-weight: 650;
+}
+.chronos-view-indicator {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  z-index: 1;
+  display: flex;
+  width: 20%;
+  justify-content: center;
+  pointer-events: none;
+  transition: transform 280ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.chronos-view-indicator > i {
+  display: block;
+  width: 22px;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--chronos-accent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .chronos-view-indicator {
+    transition: none;
+  }
+}
+
+.chronos-banner {
+  padding: 3px 12px;
+  text-align: center;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.chronos-banner-label {
+  margin-right: 2px;
+  font-weight: 650;
+}
+
+/* ---------- 浮层：日期选择 / 更多菜单 ---------- */
+.chronos-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  z-index: 50;
+  border: 1px solid var(--chronos-line-strong);
+  border-radius: 16px;
+  background: var(--chronos-panel);
+  padding: 14px;
+  box-shadow: 0 22px 55px -18px rgba(15, 23, 42, 0.35), 0 4px 12px rgba(15, 23, 42, 0.05);
+  animation: chronos-pop-in 150ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+@keyframes chronos-pop-in {
+  from { opacity: 0; transform: translateY(-4px) scale(0.99); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chronos-popover { animation: none; }
+}
+.chronos-date-popover {
+  left: 8px;
+  width: min(320px, calc(100vw - 16px));
+}
+@media (min-width: 640px) {
+  .chronos-date-popover { left: 18px; }
+}
+.chronos-date-popover-footer {
+  margin-top: 10px;
+  border-top: 1px solid var(--chronos-line);
+  padding-top: 10px;
+  text-align: center;
+}
+.chronos-date-today {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--chronos-accent);
+}
+.chronos-menu {
+  right: 8px;
+  width: 232px;
+  max-height: min(70vh, 520px);
+  overflow-y: auto;
+  padding: 8px;
+}
+@media (min-width: 640px) {
+  .chronos-menu { right: 18px; }
+}
+.chronos-menu-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 4px 6px 6px;
+}
+.chronos-menu-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--chronos-muted);
+}
+.chronos-zoom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 10px;
+  background: var(--chronos-panel-soft);
+  padding: 2px;
+}
+.chronos-zoom button {
+  display: inline-flex;
+  height: 30px;
+  width: 32px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-size: 16px;
+  color: var(--chronos-fg-soft);
+}
+.chronos-zoom button:hover:not(:disabled) {
+  background: var(--chronos-panel);
+}
+.chronos-zoom button:disabled {
+  opacity: 0.35;
+}
+.chronos-zoom .chronos-zoom-value {
+  width: auto;
+  padding: 0 6px;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--chronos-fg);
+}
+.chronos-menu-divider {
+  height: 1px;
+  margin: 6px 6px;
+  background: var(--chronos-line);
+}
+.chronos-menu-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  border-radius: 9px;
+  padding: 9px 10px;
+  text-align: left;
+  font-size: 13px;
+  color: var(--chronos-fg-soft);
+}
+.chronos-menu-item:hover {
+  background: var(--chronos-hover);
+}
+.chronos-menu-item svg {
+  height: 18px;
+  width: 18px;
+  flex-shrink: 0;
+  color: var(--chronos-muted);
+}
+.chronos-menu-account {
+  overflow: hidden;
+  padding: 4px 10px 6px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--chronos-muted);
+}
+.chronos-menu-version {
+  padding: 6px 10px 2px;
+  font-size: 10px;
+  color: var(--chronos-faint);
+}
+
+/* ---------- 侧栏 ---------- */
+.chronos-sidebar-inner {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  gap: 20px;
+  overflow-y: auto;
+  padding: 16px 14px 24px;
+}
+.chronos-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 2px 2px;
+}
+.chronos-brand-icon {
+  display: grid;
+  height: 30px;
+  width: 30px;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--chronos-accent-soft);
+  color: var(--chronos-accent-strong);
+}
+.dark .chronos-brand-icon { color: var(--chronos-accent); }
+.chronos-brand-name {
+  font-size: 14px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--chronos-fg);
+}
+.chronos-brand-version {
+  font-size: 10px;
+  color: var(--chronos-faint);
+}
+.chronos-mini-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.chronos-mini-title {
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--chronos-fg);
+}
+.chronos-mini-nav {
+  display: flex;
+  gap: 2px;
+}
+.chronos-mini-nav-button {
+  display: grid;
+  height: 26px;
+  width: 26px;
+  place-items: center;
+  border-radius: 8px;
+  color: var(--chronos-muted);
+}
+.chronos-mini-nav-button:hover {
+  background: var(--chronos-hover);
+  color: var(--chronos-fg);
+}
+.chronos-mini-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+  text-align: center;
+}
+.chronos-mini-weekday {
+  padding: 2px 0;
+  font-size: 10px;
+  color: var(--chronos-muted);
+}
+.chronos-mini-day {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
+  transition: background-color 120ms ease;
+}
+.chronos-mini-day:hover {
+  background: var(--chronos-hover);
+}
+.chronos-mini-day-today {
+  background: var(--chronos-accent);
+  color: #fff;
+  font-weight: 650;
+}
+.chronos-mini-day-today:hover {
+  background: var(--chronos-accent-strong);
+}
+.chronos-sidebar-section {
+  border-top: 1px solid var(--chronos-line);
+  padding-top: 16px;
+}
+.chronos-sidebar-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.chronos-sidebar-heading h3 {
+  font-size: 11px;
+  font-weight: 650;
+  color: var(--chronos-muted);
+}
+.chronos-text-button {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--chronos-accent);
+}
+.chronos-category-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.chronos-category-button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 8px;
+  border-radius: 8px;
+  padding: 7px 8px;
+  text-align: left;
+  font-size: 13px;
+  color: var(--chronos-fg-soft);
+}
+.chronos-category-button:hover {
+  background: var(--chronos-hover);
+}
+.chronos-category-dot {
+  height: 9px;
+  width: 9px;
+  flex-shrink: 0;
+  border: 1.5px solid transparent;
+  border-radius: 999px;
+}
+.chronos-category-name.is-hidden {
+  color: var(--chronos-faint);
+  text-decoration: line-through;
+}
+.chronos-sidebar-empty {
+  padding: 2px 4px;
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--chronos-muted);
+}
+
+/* ---------- 待办清单 ---------- */
+.chronos-task-panel {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+.chronos-task-panel.is-sidebar {
+  border-top: 1px solid var(--chronos-line);
+  padding-top: 14px;
+}
+.chronos-task-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.chronos-task-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 650;
+  color: var(--chronos-muted);
+}
+.chronos-task-count {
+  display: inline-flex;
+  min-width: 16px;
+  height: 16px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--chronos-panel-soft);
+  padding: 0 5px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--chronos-muted);
+}
+.chronos-task-close {
+  flex-shrink: 0;
+  border-radius: 6px;
+  padding: 3px 6px;
+  font-size: 11px;
+  color: var(--chronos-muted);
+}
+.chronos-task-close:hover {
+  background: var(--chronos-hover);
+  color: var(--chronos-fg);
+}
+.chronos-task-form {
+  display: flex;
+  gap: 6px;
+}
+.chronos-task-input {
+  height: 34px;
+  min-width: 0;
+  flex: 1;
+  border: 1px solid var(--chronos-line-strong);
+  border-radius: 9px;
+  background: var(--chronos-panel);
+  padding: 0 10px;
+  font-size: 12px;
+  color: var(--chronos-fg);
+  outline: none;
+  transition: border-color 130ms ease, box-shadow 130ms ease;
+}
+.chronos-task-input::placeholder {
+  color: var(--chronos-faint);
+}
+.chronos-task-input:focus {
+  border-color: var(--chronos-accent);
+  box-shadow: 0 0 0 3px var(--chronos-accent-soft);
+}
+.chronos-task-add {
+  display: inline-flex;
+  height: 34px;
+  width: 34px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  background: var(--chronos-fg);
+  font-size: 15px;
+  color: var(--chronos-panel);
+  transition: opacity 130ms ease;
+}
+.chronos-task-add:disabled {
+  opacity: 0.35;
+}
+.chronos-task-hint {
+  margin: 6px 0 8px;
+  font-size: 10px;
+  line-height: 1.6;
+  color: var(--chronos-muted);
+}
+.chronos-task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+.chronos-task-panel.is-sidebar .chronos-task-list {
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+.chronos-task-item {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 7px;
+  border: 1px solid var(--chronos-line);
+  border-radius: 10px;
+  background: var(--chronos-panel);
+  padding: 7px 8px;
+}
+.chronos-task-item--active {
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.chronos-task-item--active:active {
+  cursor: grabbing;
+}
+.chronos-task-item.is-done {
+  border-color: transparent;
+  background: transparent;
+  padding: 5px 8px;
+}
+.chronos-task-check {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  border-radius: 4px;
+  accent-color: var(--chronos-accent);
+}
+.chronos-task-title {
+  min-width: 0;
+  flex: 1;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--chronos-fg-soft);
+}
+.chronos-task-item.is-done .chronos-task-title {
+  color: var(--chronos-faint);
+  text-decoration: line-through;
+}
+.chronos-task-delete {
+  flex-shrink: 0;
+  border-radius: 4px;
+  padding: 0 2px;
+  font-size: 13px;
+  line-height: 1.2;
+  color: var(--chronos-muted);
+  opacity: 0;
+  transition: opacity 120ms ease, color 120ms ease;
+}
+.chronos-task-item:hover .chronos-task-delete,
+.chronos-task-item:focus-within .chronos-task-delete,
+.chronos-task-delete:focus-visible {
+  opacity: 1;
+}
+/* 触屏没有 hover：抽屉里始终显示删除按钮，保证可以点。 */
+.chronos-task-panel.is-sheet .chronos-task-delete {
+  opacity: 1;
+}
+.chronos-task-delete:hover {
+  color: var(--chronos-danger);
+}
+.chronos-task-grip {
+  flex-shrink: 0;
+  user-select: none;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--chronos-faint);
+}
+.chronos-task-done {
+  margin-top: 8px;
+  border-top: 1px solid var(--chronos-line);
+  padding-top: 8px;
+}
+.chronos-task-done summary {
+  cursor: pointer;
+  user-select: none;
+  font-size: 10px;
+  color: var(--chronos-muted);
+}
+.chronos-task-done .chronos-task-list {
+  margin-top: 5px;
+}
+.chronos-task-empty {
+  padding: 6px 0;
+  font-size: 10px;
+  color: var(--chronos-muted);
+}
+.chronos-task-error {
+  margin-bottom: 8px;
+  border-radius: 8px;
+  background: rgba(225, 29, 72, 0.08);
+  padding: 8px;
+  font-size: 10px;
+  line-height: 1.6;
+  color: var(--chronos-danger);
+}
+.chronos-task-error button {
+  margin-top: 5px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.chronos-task-panel.is-sheet .chronos-task-input {
+  height: 38px;
+}
+.chronos-task-panel.is-sheet .chronos-task-add {
+  height: 38px;
+  width: 38px;
+}
+.chronos-task-panel.is-sheet .chronos-task-title {
+  font-size: 13px;
+}
+.chronos-task-panel.is-sheet .chronos-task-item {
+  padding: 9px 10px;
+}
+.chronos-task-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  display: flex;
+  max-height: 58dvh;
+  flex-direction: column;
+  border-top: 1px solid var(--chronos-line-strong);
+  border-radius: 18px 18px 0 0;
+  background: var(--chronos-panel);
+  box-shadow: 0 -18px 50px -22px rgba(15, 23, 42, 0.45);
+  animation: chronos-task-sheet-in 220ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.chronos-task-sheet-grip {
+  display: flex;
+  justify-content: center;
+  padding-top: 7px;
+}
+.chronos-task-sheet-grip span {
+  display: block;
+  height: 4px;
+  width: 40px;
+  border-radius: 999px;
+  background: var(--chronos-line-strong);
+}
+.chronos-task-sheet-body {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 6px 16px calc(16px + env(safe-area-inset-bottom));
+}
+@keyframes chronos-task-sheet-in {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chronos-task-sheet { animation: none; }
+}
+
+/* 待办日程拖动时的移动端放置区 */
+.chronos-task-dropzone {
+  position: absolute;
+  left: 50%;
+  bottom: 78px;
+  z-index: 34;
+  display: flex;
+  min-width: 210px;
+  max-width: calc(100% - 28px);
+  transform: translateX(-50%);
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  border: 2px dashed var(--chronos-accent);
+  border-radius: 16px;
+  padding: 10px 18px;
+  background: var(--chronos-accent-soft);
+  color: var(--chronos-accent-strong);
+  font-size: 13px;
+  text-align: center;
+  pointer-events: auto;
+  box-shadow: 0 12px 32px rgba(2, 132, 199, 0.15);
+}
+.chronos-task-dropzone span {
+  font-size: 11px;
+  font-weight: 400;
+}
+.dark .chronos-task-dropzone {
+  color: var(--chronos-accent);
+}
+@media (min-width: 768px) {
+  .chronos-task-dropzone { display: none; }
+}
+
+/* 选中由待办生成的日程：第一次点击只选中，便于拖动／拉伸。 */
+.chronos-event-selected {
+  outline: 2px solid var(--chronos-accent);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.2), 0 6px 18px rgba(2, 132, 199, 0.2);
+}
+
+/* ---------- 悬浮按钮 ---------- */
+.chronos-fab-stack {
+  position: absolute;
+  right: 18px;
+  bottom: calc(20px + env(safe-area-inset-bottom));
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.chronos-fab {
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--chronos-line);
+  border-radius: 999px;
+  background: var(--chronos-panel);
+  box-shadow: 0 10px 30px -8px rgba(15, 23, 42, 0.28), 0 2px 6px rgba(15, 23, 42, 0.06);
+  transition: transform 120ms ease, box-shadow 160ms ease;
+}
+.chronos-fab:active {
+  transform: scale(0.94);
+}
+.chronos-fab:hover {
+  box-shadow: 0 14px 36px -10px rgba(15, 23, 42, 0.34), 0 3px 8px rgba(15, 23, 42, 0.08);
+}
+.chronos-fab-today {
+  height: 50px;
+  width: 50px;
+  font-size: 17px;
+  font-weight: 650;
+  color: var(--chronos-accent);
+}
+.chronos-fab-add {
+  height: 56px;
+  width: 56px;
+  color: var(--chronos-fg);
+}
+
+/* ---------- 日历表面与网格 ---------- */
+.chronos-calendar-surface {
+  --fc-classic-border: var(--chronos-line);
+  --fc-classic-today: var(--chronos-today-bg);
+  --fc-classic-primary: var(--chronos-accent);
+  --fc-classic-foreground: var(--chronos-fg-soft);
+  --fc-classic-now: #f43f5e;
+  --fc-classic-highlight: rgba(2, 132, 199, 0.12);
+  height: 100%;
+  background: var(--chronos-panel);
+  touch-action: pan-x pan-y;
+  -webkit-tap-highlight-color: transparent;
+}
+.dark .chronos-calendar-surface {
+  --fc-classic-highlight: rgba(56, 189, 248, 0.18);
+}
+.chronos-calendar-surface ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.chronos-calendar-surface ::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: var(--chronos-line-strong);
+  background-clip: content-box;
+}
+.chronos-calendar-surface ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* 日期栏 */
+.chronos-date-heading {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 1px 10px;
+}
+.chronos-weekday {
+  overflow: hidden;
+  max-width: 100%;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--chronos-muted);
+}
+.chronos-date-number {
+  display: inline-flex;
+  min-width: 26px;
+  height: 26px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  border-radius: 7px;
+  font-size: 19px;
+  font-weight: 650;
+  letter-spacing: -0.05em;
+  font-variant-numeric: tabular-nums;
+  color: var(--chronos-fg);
+}
+.chronos-date-lunar {
+  overflow: hidden;
+  max-width: 100%;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 10px;
+  line-height: 1.35;
+  color: var(--chronos-muted);
+  opacity: 0.78;
+}
+.chronos-today-header .chronos-date-number {
+  background: var(--chronos-accent);
+  color: #fff;
+}
+.chronos-today-header .chronos-weekday {
+  color: var(--chronos-accent);
+  font-weight: 650;
+}
+.chronos-today {
+  background-color: var(--chronos-today-bg);
+}
+.chronos-month-weekday {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--chronos-muted);
+}
+.chronos-calendar-surface .chronos-month-row {
+  min-height: calc(92px * var(--calendar-zoom, 1)) !important;
+}
+.chronos-month-cell .chronos-event-title {
+  font-size: calc(11px * clamp(0.8, var(--calendar-zoom, 1), 1.3));
+  -webkit-line-clamp: 1;
+}
+
+/* 时间轴：只显示小时数字，列宽随之缩小 */
+.chronos-hour-label {
+  display: inline-block;
+  min-width: 17px;
+  text-align: center;
+  font-size: 11px;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: var(--chronos-muted);
+}
+.chronos-allday-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--chronos-muted);
+}
+
+/* 日程卡片：浅底、左侧分类色条、更多可读文字 */
+.chronos-event {
+  border-radius: 6px;
+  background: transparent !important;
+  cursor: pointer;
+}
+.chronos-event:hover {
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.1);
+}
+.chronos-event:focus-visible {
+  outline: 2px solid var(--chronos-accent);
+  outline-offset: 1px;
+}
+.chronos-event-card {
+  position: relative;
+  display: flex;
+  height: 100%;
+  width: 100%;
+  min-height: 20px;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 1px;
+  overflow: hidden;
+  border-left: 2px solid;
+  border-radius: 6px;
+  padding: 2px 3px 2px 4px;
+  color: var(--event-text);
+  background: var(--event-background);
+}
+.chronos-event-card[data-timed="true"] {
+  container-type: size;
+  min-height: 0;
+}
+/* 由待办排入的日程：右上角小标记，提示它是待办生成的。 */
+.chronos-event-card[data-task="true"]::after {
+  content: '待办';
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  border-radius: 4px;
+  padding: 0 3px;
+  background: var(--event-accent);
+  color: #fff;
+  font-size: 8px;
+  line-height: 1.5;
+  opacity: 0.9;
+}
+.chronos-event-card[data-task="true"] .chronos-event-title {
+  padding-right: 22px;
+}
+.chronos-event-card[data-task="true"][data-list="true"] .chronos-event-title {
+  padding-right: 0;
+}
+.chronos-event-card[data-task="true"][data-list="true"]::after {
+  position: static;
+  margin-left: auto;
+  flex-shrink: 0;
+  opacity: 1;
+}
+.chronos-event-title {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow-wrap: anywhere;
+  font-size: 11.5px;
+  font-weight: 550;
+  line-height: 1.3;
+}
+.chronos-event-time {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 9px;
+  line-height: 1.2;
+  opacity: 0.68;
+  font-variant-numeric: tabular-nums;
+}
+.chronos-event-card[data-allday="true"] .chronos-event-title {
+  -webkit-line-clamp: 1;
+}
+@container (max-height: 78px) {
+  .chronos-event-title { -webkit-line-clamp: 2; }
+}
+@container (max-height: 46px) {
+  .chronos-event-time { display: none; }
+  .chronos-event-title { -webkit-line-clamp: 1; line-height: 1.35; }
+}
+/* 手机周视图每列很窄：只保留开始时间，避免「14:00–…」被截断。 */
+@container (max-width: 72px) {
+  .chronos-event-time-range { display: none; }
+}
+@media (min-width: 768px) {
+  .chronos-event-title { font-size: 12.5px; }
+  .chronos-event-time { font-size: 9.5px; }
+}
+.dark .chronos-event-card {
+  color: #e2e8f0;
+}
+/* 放大日程底部的拉伸热区，触屏与鼠标都更容易抓住。 */
+.chronos-calendar-surface .chronos-event > div:last-child:not(:first-child) {
+  height: 14px;
+  bottom: -7px;
+  cursor: ns-resize;
+}
+
+/* ---------- 日程（列表）视图 ---------- */
+.chronos-calendar-surface [data-date]:has(.chronos-agenda-day) {
+  border-top: 1px solid var(--chronos-line);
+  background: var(--chronos-panel);
+}
+.chronos-agenda-day {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 9px 2px 7px;
+}
+.chronos-agenda-weekday {
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--chronos-fg);
+}
+.chronos-agenda-date {
+  font-size: 12px;
+  color: var(--chronos-fg-soft);
+}
+.chronos-agenda-lunar {
+  font-size: 10px;
+  color: var(--chronos-muted);
+  opacity: 0.78;
+}
+.chronos-calendar-surface [role="list"] .chronos-event {
+  border-radius: 10px;
+  padding: 0 10px;
+}
+.chronos-calendar-surface [role="list"] .chronos-event:hover {
+  background: var(--chronos-hover);
+  box-shadow: none;
+}
+.chronos-event-card[data-list="true"] {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 10px;
+  height: auto;
+  min-height: 0;
+  border-left: 0;
+  border-radius: 0;
+  padding: 9px 0;
+  background: transparent;
+}
+.chronos-event-card[data-list="true"] .chronos-event-title {
+  -webkit-line-clamp: 2;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--chronos-fg);
+}
+.chronos-event-list-time {
+  flex: 0 0 auto;
+  min-width: 58px;
+  font-size: 11px;
+  color: var(--chronos-muted);
+  font-variant-numeric: tabular-nums;
+}
+.chronos-agenda-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 54px 16px;
+  font-size: 13px;
+  color: var(--chronos-muted);
+}
+.chronos-agenda-empty > span {
+  font-size: 11px;
+  color: var(--chronos-faint);
+}
+/* FullCalendar 的空状态容器自带灰色底，统一成白底。 */
+.chronos-calendar-surface [role="status"]:has(.chronos-agenda-empty) {
+  background: var(--chronos-panel);
+}
+.chronos-month-cell {
+  font-size: 12px;
+}
+
+/* ---------- 选区 ---------- */
 .chronos-selection-overlay {
-  position: absolute; inset: 0; z-index: 15;
-  pointer-events: none; overflow: hidden;
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  pointer-events: none;
+  overflow: hidden;
 }
 .chronos-selection-box {
   position: absolute;
-  border: 2px solid #0284c7;
+  border: 1.5px solid var(--chronos-accent);
   border-radius: 8px;
-  background: linear-gradient(180deg, #0284c714, #0284c705);
-  box-shadow: inset 0 0 0 1px #ffffffcc, 0 4px 16px #0284c726;
+  background: linear-gradient(180deg, rgba(2, 132, 199, 0.1), rgba(2, 132, 199, 0.02));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8), 0 4px 16px rgba(2, 132, 199, 0.15);
 }
 .chronos-selection-handle {
-  position: absolute; left: 10px; right: 10px; z-index: 2;
-  height: 6px; padding: 0; border: 0; border-radius: 999px;
-  background: #0284c7;
-  box-shadow: 0 0 0 1px #ffffffdd, 0 2px 7px #0284c766;
-  pointer-events: auto; cursor: ns-resize; touch-action: none;
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  z-index: 2;
+  height: 6px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--chronos-accent);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.85), 0 2px 7px rgba(2, 132, 199, 0.4);
+  pointer-events: auto;
+  cursor: ns-resize;
+  touch-action: none;
 }
 .chronos-selection-handle::before {
-  content: ''; position: absolute; left: -6px; right: -6px; top: -8px; bottom: -8px;
+  content: '';
+  position: absolute;
+  left: -6px;
+  right: -6px;
+  top: -8px;
+  bottom: -8px;
 }
 .chronos-selection-handle:hover,
 .chronos-selection-handle:focus-visible {
-  height: 8px; background: #0369a1; outline: none;
-  box-shadow: 0 0 0 1px #fff, 0 3px 10px #0284c799;
+  height: 8px;
+  background: var(--chronos-accent-strong);
+  outline: none;
+  box-shadow: 0 0 0 1px #fff, 0 3px 10px rgba(2, 132, 199, 0.55);
 }
 .chronos-selection-handle-top { top: -3px; }
 .chronos-selection-handle-bottom { bottom: -3px; }
@@ -42,149 +1177,103 @@ body.chronos-resizing * {
   cursor: ns-resize !important;
   user-select: none !important;
 }
-.dark .chronos-selection-handle {
-  background: #38bdf8;
-  box-shadow: 0 0 0 1px #0f172a, 0 2px 7px #38bdf866;
-}
-.dark .chronos-selection-handle:hover,
-.dark .chronos-selection-handle:focus-visible {
-  background: #7dd3fc;
-  box-shadow: 0 0 0 1px #0f172a, 0 3px 10px #38bdf899;
-}
 .dark .chronos-selection-box {
-  border-color: #38bdf8;
-  background: linear-gradient(180deg, #38bdf81f, #38bdf808);
-  box-shadow: inset 0 0 0 1px #0f172acc, 0 4px 16px #38bdf826;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.8), 0 4px 16px rgba(56, 189, 248, 0.15);
 }
-.chronos-task-dropzone {
-  position: absolute; left: 50%; bottom: 78px; transform: translateX(-50%);
-  z-index: 34; display: flex; flex-direction: column; align-items: center; gap: 2px;
-  min-width: 210px; max-width: calc(100% - 28px);
-  border: 2px dashed #0284c7; border-radius: 16px;
-  padding: 10px 18px; background: #f0f9ff; color: #0369a1;
-  font-size: 13px; text-align: center; pointer-events: auto;
-  box-shadow: 0 12px 32px #0284c726;
+.dark .chronos-selection-handle {
+  box-shadow: 0 0 0 1px #0f172a, 0 2px 7px rgba(56, 189, 248, 0.4);
 }
-.chronos-task-dropzone span { font-size: 11px; font-weight: 400; color: #0284c7; }
-.dark .chronos-task-dropzone {
-  border-color: #38bdf8; background: #082f49; color: #bae6fd;
-  box-shadow: 0 12px 32px #38bdf826;
-}
-.dark .chronos-task-dropzone span { color: #7dd3fc; }
-/* 桌面端拖到左侧待办栏即可，不需要浮层，避免向下拖动时误触。 */
-@media (min-width: 768px) {
-  .chronos-task-dropzone { display: none; }
-}
+
 .chronos-selection-hint {
-  position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
-  z-index: 26; max-width: calc(100% - 24px);
-  display: flex; align-items: center; gap: 10px;
-  border: 1px solid #7dd3fc; border-radius: 14px; padding: 8px 10px 8px 12px;
-  background: #f0f9ff; color: #0369a1; font-size: 12px;
-  box-shadow: 0 10px 30px #0284c71f;
+  position: absolute;
+  bottom: calc(90px + env(safe-area-inset-bottom));
+  left: 50%;
+  z-index: 26;
+  display: flex;
+  max-width: calc(100% - 24px);
+  transform: translateX(-50%);
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--chronos-line-strong);
+  border-radius: 14px;
+  padding: 8px 10px 8px 12px;
+  background: var(--chronos-panel);
+  color: var(--chronos-fg-soft);
+  font-size: 12px;
+  box-shadow: 0 14px 36px -12px rgba(15, 23, 42, 0.28);
 }
 .chronos-selection-hint > [role="status"] { min-width: 0; }
-.chronos-selection-actions { display: flex; flex-shrink: 0; gap: 6px; }
-.chronos-selection-primary, .chronos-selection-cancel {
-  border-radius: 8px; padding: 5px 9px; font-size: 12px; font-weight: 600;
-  white-space: nowrap; transition: background-color 160ms ease;
+.chronos-selection-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 6px;
 }
-.chronos-selection-primary { background: #0284c7; color: #fff; }
-.chronos-selection-primary:hover { background: #0369a1; }
-.chronos-selection-cancel { color: #0369a1; }
-.chronos-selection-cancel:hover { background: #e0f2fe; }
-.dark .chronos-selection-hint { background: #082f49; color: #bae6fd; border-color: #075985; }
-.dark .chronos-selection-primary { background: #0284c7; }
-.dark .chronos-selection-cancel { color: #bae6fd; }
-.dark .chronos-selection-cancel:hover { background: #0c4a6e; }
-.dark .chronos-calendar-surface {
-  --fc-classic-border: #263344;
-  --fc-classic-today: #122539;
-  --fc-classic-background: #0f172a;
-  --fc-classic-foreground: #cbd5e1;
-  --fc-classic-highlight: #38bdf82e;
+.chronos-selection-primary,
+.chronos-selection-cancel {
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background-color 160ms ease;
 }
-.chronos-event-card {
-  position: relative;
-  height: 100%; width: 100%; min-height: 22px;
-  border-left: 2px solid; border-radius: 4px;
-  padding: 3px 6px; overflow: hidden;
-  display: flex; flex-direction: column; justify-content: flex-start; gap: 3px;
-  color: var(--event-text); background: var(--event-background);
+.chronos-selection-primary {
+  background: var(--chronos-accent);
+  color: #fff;
 }
-.chronos-event-card[data-task="true"]::after {
-  content: '待办';
-  position: absolute; top: 2px; right: 3px;
-  border-radius: 4px; padding: 1px 3px;
-  background: var(--event-accent); color: #fff;
-  font-size: 9px; line-height: 1.25; opacity: 0.9;
-}
-.chronos-event-card[data-task="true"] .chronos-event-title { padding-right: 24px; }
-.chronos-event-card[data-timed="true"] { container-type: size; min-height: 0; }
-.chronos-event-title {
-  font-size: 12px; font-weight: 500; line-height: 1.4; overflow: hidden;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-  overflow-wrap: anywhere;
-}
-.chronos-event-time { font-size: 10px; line-height: 1.25; opacity: 0.7; }
-@container (max-height: 46px) {
-  .chronos-event-time { display: none; }
-  .chronos-event-title { -webkit-line-clamp: 1; line-height: 1.3; }
-}
-.dark .chronos-event-card { color: #e2e8f0; }
-.chronos-event { border-radius: 5px; cursor: pointer; background: transparent !important; }
-.chronos-event:hover { box-shadow: 0 4px 14px #0f172a1a; }
-.chronos-event-selected {
-  outline: 2px solid #0284c7; outline-offset: 2px;
-  box-shadow: 0 0 0 4px #0284c733, 0 6px 18px #0284c733;
-}
-.dark .chronos-event-selected {
-  outline-color: #38bdf8;
-  box-shadow: 0 0 0 4px #38bdf833, 0 6px 18px #38bdf833;
-}
-.chronos-event:focus-visible { outline: 2px solid #0284c7; outline-offset: 1px; }
-/* 放大日程底部的拉伸热区，触屏与鼠标都更容易抓住。 */
-.chronos-calendar-surface .chronos-event > div:last-child:not(:first-child) {
-  height: 14px; bottom: -7px; cursor: ns-resize;
-}
-.chronos-date-heading { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 9px 0 12px; }
-.chronos-weekday { font-size: 12px; font-weight: 500; color: #64748b; }
-.chronos-date-number { font-size: 20px; font-weight: 600; color: #475569; letter-spacing: -0.7px; }
-.chronos-today-header .chronos-date-number, .chronos-today-header .chronos-weekday { color: #0284c7; }
-.chronos-today-header .chronos-date-number::after { content: ''; display: block; height: 3px; width: 24px; border-radius: 2px; background: #0284c7; margin: 5px auto -8px; }
-.chronos-today { background-color: #f0f8ff; }
-.dark .chronos-today { background-color: #122539; }
-.dark .chronos-date-number, .dark .chronos-weekday { color: #cbd5e1; }
-.dark .chronos-today-header .chronos-date-number { color: #38bdf8; }
-.chronos-calendar-surface .chronos-month-row { min-height: calc(92px * var(--calendar-zoom, 1)) !important; }
-.chronos-month-cell .chronos-event-title { font-size: calc(12px * clamp(0.8, var(--calendar-zoom, 1), 1.3)); }
-.chronos-undo-bar {
-  position: fixed; left: 50%; bottom: max(24px, env(safe-area-inset-bottom));
-  transform: translateX(-50%); z-index: 35;
-  display: flex; align-items: center; gap: 18px;
-  max-width: min(560px, calc(100vw - 150px));
-  border: 1px solid #e2e8f0; background: #fff; border-radius: 14px;
-  padding: 12px 18px; box-shadow: 0 6px 30px #0f172a15; font-size: 13px;
-}
-.dark .chronos-undo-bar { background: #1e293b; border-color: #334155; }
-.chronos-task-item--active { user-select: none; -webkit-user-select: none; }
-.chronos-task-sheet { animation: chronos-task-sheet-in 220ms cubic-bezier(0.22, 0.61, 0.36, 1); }
-@keyframes chronos-task-sheet-in {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .chronos-task-sheet { animation: none; }
+.chronos-selection-primary:hover { background: var(--chronos-accent-strong); }
+.chronos-selection-cancel { color: var(--chronos-accent); }
+.chronos-selection-cancel:hover { background: var(--chronos-accent-soft); }
+@media (min-width: 640px) {
+  .chronos-selection-hint { bottom: 20px; }
 }
 @media (max-width: 639px) {
-  .chronos-date-number { font-size: 16px; }
-  .chronos-date-heading { gap: 5px; padding: 8px 0 10px; }
-  .chronos-event-card { padding: 3px 4px; }
-  .chronos-undo-bar { left: 12px; transform: none; padding: 10px 12px; gap: 10px; }
   .chronos-selection-hint {
-    left: 10px; right: 96px; bottom: 12px; transform: none; width: auto;
-    flex-wrap: wrap; gap: 6px; padding: 7px 8px 7px 10px;
+    left: 10px;
+    right: 10px;
+    bottom: calc(88px + env(safe-area-inset-bottom));
+    width: auto;
+    max-width: none;
+    transform: none;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px 9px 8px 11px;
   }
-  .chronos-selection-hint > [role="status"] { flex: 1 1 100%; }
+  .chronos-selection-hint > [role="status"] { flex: 1 1 100%; line-height: 1.5; }
   .chronos-selection-actions { margin-left: auto; }
+}
+
+/* ---------- 撤销条 ---------- */
+.chronos-undo-bar {
+  position: fixed;
+  left: 50%;
+  bottom: max(22px, env(safe-area-inset-bottom));
+  z-index: 35;
+  display: flex;
+  max-width: min(520px, calc(100vw - 150px));
+  transform: translateX(-50%);
+  align-items: center;
+  gap: 18px;
+  border: 1px solid var(--chronos-line-strong);
+  border-radius: 14px;
+  background: var(--chronos-panel);
+  padding: 10px 16px;
+  font-size: 12px;
+  box-shadow: 0 12px 40px -12px rgba(15, 23, 42, 0.3);
+}
+@media (max-width: 639px) {
+  .chronos-undo-bar {
+    left: 10px;
+    right: 86px;
+    max-width: none;
+    transform: none;
+    padding: 9px 12px;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 639px) {
+  .chronos-date-heading { gap: 1px; padding: 7px 0 9px; }
+  .chronos-date-number { height: 24px; min-width: 24px; font-size: 17px; }
+  .chronos-fab-stack { right: 14px; }
 }

@@ -1,0 +1,326 @@
+/* =========================================================
+   弹层、编辑器与表单控件
+   ========================================================= */
+
+.dark {
+  color-scheme: dark;
+}
+
+.chronos-modal-backdrop {
+  background: rgba(15, 23, 42, 0.42);
+  animation: chronos-backdrop-in 140ms ease-out;
+}
+.dark .chronos-modal-backdrop {
+  background: rgba(2, 6, 23, 0.66);
+}
+@keyframes chronos-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.chronos-modal-panel {
+  border-radius: 20px 20px 0 0;
+  background: var(--chronos-panel);
+  color: var(--chronos-fg);
+  box-shadow: 0 -12px 50px -20px rgba(15, 23, 42, 0.45), 0 24px 60px -20px rgba(15, 23, 42, 0.35);
+  animation: chronos-sheet-in 200ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+@keyframes chronos-sheet-in {
+  from { transform: translateY(18px); opacity: 0.6; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@media (min-width: 640px) {
+  .chronos-modal-panel {
+    border-radius: 20px;
+    animation: chronos-dialog-in 160ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  @keyframes chronos-dialog-in {
+    from { transform: translateY(8px) scale(0.99); opacity: 0; }
+    to { transform: translateY(0) scale(1); opacity: 1; }
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chronos-modal-backdrop,
+  .chronos-modal-panel { animation: none; }
+}
+.chronos-modal-header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--chronos-line);
+  padding: 13px 18px;
+}
+.chronos-modal-title {
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--chronos-fg);
+}
+.chronos-modal-close {
+  display: grid;
+  height: 32px;
+  width: 32px;
+  place-items: center;
+  border-radius: 9px;
+  color: var(--chronos-muted);
+  transition: background-color 140ms ease, color 140ms ease;
+}
+.chronos-modal-close:hover {
+  background: var(--chronos-hover);
+  color: var(--chronos-fg);
+}
+.chronos-modal-body {
+  padding: 16px 18px 18px;
+}
+.chronos-modal-footer {
+  flex-shrink: 0;
+  border-top: 1px solid var(--chronos-line);
+  background: var(--chronos-panel);
+  padding: 10px 18px calc(10px + env(safe-area-inset-bottom));
+}
+
+/* ---------- 编辑器 ---------- */
+.chronos-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.chronos-field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+.chronos-label {
+  margin-bottom: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--chronos-muted);
+}
+.chronos-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.chronos-input {
+  height: 40px;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--chronos-line-strong);
+  border-radius: 10px;
+  background: var(--chronos-panel);
+  padding: 0 11px;
+  font-size: 14px;
+  color: var(--chronos-fg);
+  outline: none;
+  transition: border-color 130ms ease, box-shadow 130ms ease;
+}
+textarea.chronos-input {
+  height: auto;
+  padding: 9px 11px;
+  line-height: 1.55;
+}
+.chronos-input::placeholder {
+  color: var(--chronos-faint);
+}
+.chronos-input:focus {
+  border-color: var(--chronos-accent);
+  box-shadow: 0 0 0 3px var(--chronos-accent-soft);
+}
+.chronos-select {
+  height: 34px;
+  width: auto;
+  min-width: 120px;
+  border-radius: 9px;
+  font-size: 13px;
+}
+.dark input[type="date"].chronos-input {
+  color-scheme: dark;
+}
+.chronos-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--chronos-fg-soft);
+  cursor: pointer;
+  user-select: none;
+}
+.chronos-checkbox {
+  height: 16px;
+  width: 16px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  accent-color: var(--chronos-accent);
+}
+.chronos-field-hint {
+  margin-top: 6px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--chronos-muted);
+}
+.chronos-field-error {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--chronos-danger);
+}
+.chronos-card {
+  border: 1px solid var(--chronos-line);
+  border-radius: 14px;
+  padding: 12px;
+  background: var(--chronos-panel);
+}
+.chronos-disclosure {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--chronos-fg-soft);
+}
+.chronos-disclosure:hover {
+  color: var(--chronos-accent);
+}
+.chronos-alert {
+  border: 1px solid #fcd34d;
+  border-radius: 12px;
+  background: #fffbeb;
+  padding: 12px;
+  font-size: 13px;
+  color: #92400e;
+}
+.dark .chronos-alert {
+  border-color: #78350f;
+  background: rgba(120, 53, 15, 0.25);
+  color: #fcd34d;
+}
+.chronos-note {
+  border-radius: 10px;
+  background: var(--chronos-accent-soft);
+  padding: 8px 11px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--chronos-accent-strong);
+}
+.dark .chronos-note {
+  color: var(--chronos-accent);
+}
+.chronos-task-link {
+  border: 1px solid var(--chronos-line-strong);
+  border-radius: 14px;
+  background: var(--chronos-accent-soft);
+  padding: 12px;
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--chronos-accent-strong);
+}
+.chronos-task-link > p {
+  margin-bottom: 9px;
+}
+.dark .chronos-task-link {
+  color: var(--chronos-accent);
+}
+.chronos-danger-button {
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 9px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--chronos-danger);
+  transition: background-color 140ms ease;
+}
+.chronos-danger-button:hover {
+  background: rgba(225, 29, 72, 0.08);
+}
+.chronos-danger-button.is-confirming {
+  background: var(--chronos-danger);
+  color: #fff;
+}
+
+/* ---------- 任务类型标签 ---------- */
+.chronos-category-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.chronos-chip {
+  display: inline-flex;
+  height: 32px;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--chronos-line-strong);
+  border-radius: 999px;
+  padding: 0 11px;
+  font-size: 12px;
+  color: var(--chronos-fg-soft);
+  transition: border-color 120ms ease, background-color 120ms ease, color 120ms ease;
+}
+.chronos-chip:hover:not(:disabled) {
+  background: var(--chronos-hover);
+}
+.chronos-chip.is-selected {
+  border-color: var(--chronos-accent);
+  background: var(--chronos-accent-soft);
+  color: var(--chronos-accent-strong);
+  font-weight: 600;
+}
+.dark .chronos-chip.is-selected {
+  color: var(--chronos-accent);
+}
+.chronos-chip:disabled {
+  opacity: 0.5;
+}
+.chronos-chip-new {
+  border-style: dashed;
+  color: var(--chronos-muted);
+}
+.chronos-chip-dot {
+  height: 7px;
+  width: 7px;
+  flex-shrink: 0;
+  border: 1.5px solid transparent;
+  border-radius: 999px;
+}
+.chronos-category-create {
+  margin-top: 10px;
+  border: 1px dashed var(--chronos-line-strong);
+  border-radius: 12px;
+  background: var(--chronos-panel-soft);
+  padding: 10px;
+}
+.chronos-inline-primary {
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: var(--chronos-fg);
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--chronos-panel);
+}
+.chronos-inline-primary:disabled {
+  opacity: 0.4;
+}
+.chronos-inline-ghost {
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  padding: 0 8px;
+  font-size: 12px;
+  color: var(--chronos-muted);
+}
+.chronos-inline-ghost:hover {
+  background: var(--chronos-hover);
+}
+.chronos-swatch {
+  height: 18px;
+  width: 18px;
+  border: 2px solid var(--chronos-panel);
+  border-radius: 999px;
+  box-shadow: 0 0 0 1px var(--chronos-line-strong);
+}
+.chronos-swatch.is-selected {
+  box-shadow: 0 0 0 2px var(--chronos-fg);
+}

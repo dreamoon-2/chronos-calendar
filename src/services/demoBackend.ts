@@ -13,7 +13,6 @@ import type {
   TaskRow,
   TaskUpdate,
 } from '../types/database'
-import { DEFAULT_CATEGORIES } from '../features/categories/categoryPresets'
 import { ConflictError } from '../utils/errors'
 import { eventOverlapsRange, toDateOnly } from '../utils/dates'
 
@@ -26,6 +25,17 @@ interface DemoState {
   tasks: TaskRow[]
 }
 
+/**
+ * 仅用于演示数据的示例分类，不是产品默认类型。
+ * 新账号（真实模式）默认没有分类，需自行在设置或日程编辑器中创建。
+ */
+const DEMO_CATEGORIES = [
+  { name: '学习', color: '#d97706' },
+  { name: '研究', color: '#7c3aed' },
+  { name: '会议', color: '#2563eb' },
+  { name: '生活', color: '#0d9488' },
+]
+
 function uid(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
     return crypto.randomUUID()
@@ -35,7 +45,7 @@ function uid(): string {
 
 function buildSeed(): DemoState {
   const now = new Date()
-  const categories: CategoryRow[] = DEFAULT_CATEGORIES.map((c, i) => ({
+  const categories: CategoryRow[] = DEMO_CATEGORIES.map((c, i) => ({
     id: uid(),
     user_id: DEMO_USER_ID,
     name: c.name,
@@ -93,7 +103,7 @@ function buildSeed(): DemoState {
   events.push({
     id: uid(),
     user_id: DEMO_USER_ID,
-    category_id: categories[4].id,
+    category_id: categories[2].id,
     task_id: null,
     title: '论文计划',
     description: '全天安排（演示）',
@@ -138,7 +148,7 @@ function buildSeed(): DemoState {
       notes: '',
       done: true,
       estimated_minutes: 30,
-      category_id: categories[4].id,
+      category_id: categories[3].id,
       created_at: new Date(now.getTime() - 120_000).toISOString(),
       updated_at: new Date(now.getTime() - 120_000).toISOString(),
     },

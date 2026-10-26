@@ -15,9 +15,9 @@ const E2E_PASSWORD = process.env.E2E_PASSWORD
 
 test('应用可加载（登录页或日历，取决于是否配置凭证）', async ({ page }) => {
   await page.goto('/')
-  await expect(page.getByText('Chronos').first()).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible()
   await expect(
-    page.getByText(/演示模式|登录后跨端同步|添加日程/).first(),
+    page.getByText(/演示模式|登录后跨端同步|新建日程/).first(),
   ).toBeVisible()
 })
 
@@ -33,8 +33,7 @@ test.describe('演示模式（无凭证时）', () => {
   })
 
   test('打开新建日程表单并可保存一条日程', async ({ page }) => {
-    const openButton = page.getByRole('button', { name: /添加日程|新建日程/ }).first()
-    await openButton.click()
+    await page.getByRole('button', { name: '新建日程', exact: true }).click()
     await expect(page.getByText('新建日程').first()).toBeVisible()
 
     await page.locator('#ev-title').fill('E2E 测试日程')
@@ -58,15 +57,16 @@ test.describe('真实 Supabase（需 E2E_EMAIL / E2E_PASSWORD）', () => {
     await page.locator('#password').fill(E2E_PASSWORD as string)
     await page.getByRole('button', { name: '登录', exact: true }).click()
 
-    // 登录成功进入日历：出现视图切换与「添加日程」，且不再显示登录表单。
-    await expect(page.getByRole('button', { name: /添加日程|新建日程/ }).first()).toBeVisible({
+    // 登录成功进入日历：出现视图标签与右下角新建按钮，且不再显示登录表单。
+    await expect(page.getByRole('group', { name: '日历视图' })).toBeVisible({
       timeout: 15_000,
     })
+    await expect(page.getByRole('button', { name: '新建日程', exact: true })).toBeVisible()
     await expect(page.locator('#email')).toHaveCount(0)
 
     // 创建一条日程，验证真实 CRUD 与 RLS 通路。
     const title = `E2E ${Date.now()}`
-    await page.getByRole('button', { name: /添加日程|新建日程/ }).first().click()
+    await page.getByRole('button', { name: '新建日程', exact: true }).click()
     await page.locator('#ev-title').fill(title)
     await page.getByRole('button', { name: '保存', exact: true }).click()
     await expect(page.getByText('新建日程').first()).toBeHidden()

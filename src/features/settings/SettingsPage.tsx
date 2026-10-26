@@ -4,7 +4,6 @@ import { Modal } from '../../components/ui/Modal'
 import { ColorPicker } from '../../components/ui/ColorPicker'
 import { useToast } from '../../components/ui/Toast'
 import { colorPalette } from '../../utils/colors'
-import { DEFAULT_CATEGORIES } from '../categories/categoryPresets'
 import { toErrorMessage } from '../../utils/errors'
 import { useAuth } from '../auth/AuthProvider'
 import { mapAuthError, setPassword } from '../auth/authService'
@@ -64,18 +63,6 @@ export function SettingsPage({ open, onClose }: SettingsPageProps) {
     }
   }
 
-  const addPreset = async (preset: (typeof DEFAULT_CATEGORIES)[number]) => {
-    try {
-      await createM.mutateAsync({
-        ...preset,
-        sort_order: Math.max(-1, ...(categories.data ?? []).map((category) => category.sort_order)) + 1,
-      })
-      toast.success(`已添加「${preset.name}」类型`)
-    } catch (err) {
-      toast.error(toErrorMessage(err))
-    }
-  }
-
   const changeColor = async (id: string, color: string) => {
     try {
       await updateM.mutateAsync({ id, patch: { color } })
@@ -108,21 +95,12 @@ export function SettingsPage({ open, onClose }: SettingsPageProps) {
       <div className="space-y-6">
         <section>
           <h3 className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">
-            任务类型与主题色
+            任务类型
           </h3>
 
-          <p className="mb-2 text-xs text-slate-500 dark:text-slate-400">基础类型可直接添加，也可以创建自己的类型。类型颜色会应用到对应的所有日程。</p>
-          <div className="mb-4 flex flex-wrap gap-2" role="group" aria-label="添加基础任务类型">
-            {DEFAULT_CATEGORIES.map((preset) => {
-              const exists = (categories.data ?? []).some((category) => category.name === preset.name)
-              return (
-                <button key={preset.name} type="button" disabled={exists || createM.isPending || !categories.isSuccess} onClick={() => void addPreset(preset)} className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs text-slate-600 disabled:opacity-50 dark:border-slate-700 dark:text-slate-300">
-                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: preset.color }} />
-                  {preset.name}{exists ? ' ✓' : ' ＋'}
-                </button>
-              )
-            })}
-          </div>
+          <p className="mb-4 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+            不再内置默认类型。创建自己的类型后，可在新建日程时直接选择；修改颜色会同步到该类型下的所有日程。
+          </p>
 
           <ul className="space-y-2">
             {(categories.data ?? []).map((c) => (

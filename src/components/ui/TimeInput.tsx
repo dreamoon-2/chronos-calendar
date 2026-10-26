@@ -51,7 +51,7 @@ export function TimeInput({
   const [text, setText] = useState(value)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // 外部（例如草稿回填或表单重置）改变值时同步显示；正在输入时不打断光标。
+  // 外部（例如表单重置或回填）改变值时同步显示；正在输入时不打断光标。
   useEffect(() => {
     if (document.activeElement !== inputRef.current) setText(value)
   }, [value])

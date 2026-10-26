@@ -73,4 +73,9 @@ describe('toCalendarEvent', () => {
     expect(ev.end).toBe('2026-10-09')
     expect(ev.extendedProps.categoryId).toBeNull()
   })
+
+  it('keeps the task link for events scheduled from a todo', () => {
+    const ev = toCalendarEvent({ ...timedRow(), task_id: 'task-1' }, category)
+    expect(ev.extendedProps.taskId).toBe('task-1')
+  })
 })
