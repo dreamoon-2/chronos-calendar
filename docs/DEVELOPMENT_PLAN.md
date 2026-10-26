@@ -18,6 +18,7 @@
 - 新增 `utils/lunar.ts`：用 `Intl` 中国历法读取农历日，配合 1900–2100 节气公式显示「初十」「霜降」等，带缓存与降级。
 - 新增 `npm run dev:demo`：使用空 env 目录启动，不读取 `.env.local`，方便演示与浏览器测试。
 - 验证：`typecheck`、`lint`、61 项单元测试通过；演示服务器下 Playwright 52 项通过、12 项按平台／真实账号条件跳过；生产构建通过。
+- 已推送 `main`（`f75f81d`）并创建 `v0.5.0` tag；GitHub Actions 双端构建与发布成功，产物包含 Windows 安装包、签名、Android APK 与 `latest.json`：[GitHub Release](https://github.com/dreamoon-2/chronos-calendar/releases/tag/v0.5.0)。
 - 待真实环境验收：Android 真机滑动、软键盘、通知；Windows 安装包、托盘与系统通知；真实 Supabase 账号的同步与 RLS。
 
 ## v0.4.0 — 2026-10-19

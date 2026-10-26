@@ -1,6 +1,6 @@
 # 0.5.0 功能体验与测试指南
 
-0.5.0 统一了网页、Windows 与 Android 的界面与交互：移除日程草稿、保留并适配待办清单、去掉左右箭头、重做标题栏与视图标签、缩窄时间列，并新增移动端滑动切视图与「日程」列表。发布后可从 [Releases](https://github.com/dreamoon-2/chronos-calendar/releases) 下载安装包；也可按下方路径使用本机构建产物。
+0.5.0 统一了网页、Windows 与 Android 的界面与交互：移除日程草稿、保留并适配待办清单、去掉左右箭头、重做标题栏与视图标签、缩窄时间列，并新增移动端滑动切视图与「日程」列表。正式安装包见 [v0.5.0 Release](https://github.com/dreamoon-2/chronos-calendar/releases/tag/v0.5.0)；也可按下方路径使用本机构建产物。
 
 ## 一、打开正确的版本
 

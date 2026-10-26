@@ -209,7 +209,7 @@ npm run android:prepare     # 验证 APK 包名、版本和原签名，复制到
 
 - debug：`android/app/build/outputs/apk/debug/app-debug.apk`
 - release（已签名）：`android/app/build/outputs/apk/release/app-release.apk`
-- APK：`release/Chronos-Calendar_0.5.0_android.apk`；发布后可到 [Releases](https://github.com/dreamoon-2/chronos-calendar/releases) 下载。推送新版本 tag 时，Actions 同时构建 Windows 和 Android，两端检查通过后在同一 Release 上传安装包。Android 当前仍通过下载安装 APK 更新，未接入应用内自动安装。配置步骤见 [自动更新与双端发布](docs/AUTO_UPDATE.md)。
+- APK：`release/Chronos-Calendar_0.5.0_android.apk`；也可从 [v0.5.0 Release](https://github.com/dreamoon-2/chronos-calendar/releases/tag/v0.5.0) 下载。推送新版本 tag 时，Actions 同时构建 Windows 和 Android，两端检查通过后在同一 Release 上传安装包。Android 当前仍通过下载安装 APK 更新，未接入应用内自动安装。配置步骤见 [自动更新与双端发布](docs/AUTO_UPDATE.md)。
 
 > ⚠️ **国内网络注意**：`dl.google.com` / `maven.google.com` 直连被墙，本仓库已做如下适配：
 >
